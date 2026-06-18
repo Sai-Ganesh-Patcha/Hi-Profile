@@ -58,57 +58,63 @@ export default function Setup() {
         {/* Platform Input List */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', marginBottom: 36 }}>
           {PLATFORMS.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-              {/* Colored square icon wrapper */}
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 14,
-                background: p.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
-              }}>
-                {p.icon}
-              </div>
+            <div key={p.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%' }}>
+              <label htmlFor={`input-${p.id}`} style={{ alignSelf: 'flex-start', fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
+                {p.label} Username
+              </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%' }}>
+                {/* Colored square icon wrapper */}
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  background: p.bg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.06)'
+                }}>
+                  {p.icon}
+                </div>
 
-              {/* Pill shaped input container */}
-              <div style={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                background: '#F4F4F6',
-                borderRadius: 14,
-                padding: '0 18px',
-                height: 48,
-                border: '1.5px solid transparent',
-                transition: 'all 0.2s',
-                boxSizing: 'border-box'
-              }}>
-                <span style={{ color: '#000000', fontWeight: 700, fontSize: '1.05rem', marginRight: 4 }}>@</span>
-                <input
-                  type="text"
-                  placeholder="username"
-                  value={links[p.id] || ''}
-                  onChange={e => setLinks(l => ({ ...l, [p.id]: e.target.value }))}
-                  style={{
-                    flex: 1,
-                    border: 'none',
-                    background: 'transparent',
-                    fontFamily: 'var(--font-body)',
-                    fontSize: '1rem',
-                    fontWeight: links[p.id] ? 700 : 500,
-                    color: '#000000',
-                    outline: 'none'
-                  }}
-                />
-                {links[p.id] && (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginLeft: 8 }}>
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                )}
+                {/* Pill shaped input container */}
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: '#F4F4F6',
+                  borderRadius: 14,
+                  padding: '0 18px',
+                  height: 48,
+                  border: '1.5px solid transparent',
+                  transition: 'all 0.2s',
+                  boxSizing: 'border-box'
+                }}>
+                  <span style={{ color: '#000000', fontWeight: 700, fontSize: '1.05rem', marginRight: 4 }}>@</span>
+                  <input
+                    type="text"
+                    id={`input-${p.id}`}
+                    placeholder={`${p.label} handle`}
+                    value={links[p.id] || ''}
+                    onChange={e => setLinks(l => ({ ...l, [p.id]: e.target.value }))}
+                    style={{
+                      flex: 1,
+                      border: 'none',
+                      background: 'transparent',
+                      fontFamily: 'var(--font-body)',
+                      fontSize: '1rem',
+                      fontWeight: links[p.id] ? 700 : 500,
+                      color: '#000000',
+                      outline: 'none'
+                    }}
+                  />
+                  {links[p.id] && (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#000000" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginLeft: 8 }}>
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
+                </div>
               </div>
             </div>
           ))}

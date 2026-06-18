@@ -38,7 +38,7 @@ export default function Register() {
 
         {/* Headline */}
         <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 600, color: '#A0A0A5', marginBottom: 36, letterSpacing: '-0.02em' }}>
-          <span style={{ color: '#000000', fontWeight: 700 }}>hiprofile.bio/{username}</span> is your now! 🥳
+          <span style={{ color: '#000000', fontWeight: 700 }}>hiprofile.bio/{username}</span> is yours now! 🥳
         </h2>
 
         <form onSubmit={handleRegister}>
@@ -55,6 +55,7 @@ export default function Register() {
               placeholder="Email"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              id="register-email-input"
               style={{
                 width: '100%',
                 height: 54,
@@ -71,9 +72,10 @@ export default function Register() {
             />
           </div>
 
-          {/* Blue Log In button */}
+          {/* Blue Login button */}
           <button
             type="submit"
+            id="btn-register-submit"
             style={{
               width: '100%',
               height: 54,

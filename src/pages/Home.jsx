@@ -3,6 +3,32 @@ import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import Toast, { useToast } from '../components/Toast'
 import { useOnboarding } from '../context/OnboardingContext'
+import { getSocialIcon } from '../components/SocialIcons'
+
+const renderLinkButtonContent = (label) => {
+  let text = label;
+  let icon = null;
+  
+  if (label.includes('Portfolio')) { icon = '💻'; }
+  else if (label.includes('Dribbble')) { icon = getSocialIcon('dribbble', 16, 'currentColor'); text = 'Dribbble'; }
+  else if (label.includes('LinkedIn')) { icon = getSocialIcon('linkedin', 16, 'currentColor'); text = 'LinkedIn'; }
+  else if (label.includes('Twitter')) { icon = getSocialIcon('twitter', 16, 'currentColor'); text = 'Twitter'; }
+  else if (label.includes('GitHub')) { icon = getSocialIcon('github', 16, 'currentColor'); text = 'GitHub'; }
+  else if (label.includes('Instagram')) { icon = getSocialIcon('instagram', 16, 'currentColor'); text = 'Instagram'; }
+  else if (label.includes('Blog')) { icon = '✍️'; }
+  else if (label.includes('Resume')) { icon = '📄'; }
+  else if (label.includes('Shop Prints')) { icon = '🖼️'; }
+  else if (label.includes('Commissions')) { icon = '🎨'; }
+  else if (label.includes('Products')) { icon = '🚀'; }
+  else if (label.includes('Newsletter')) { icon = '✉️'; }
+  else if (label.includes('Podcast')) { icon = '🎙️'; }
+
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+      {icon} {text}
+    </span>
+  )
+}
 
 export default function Home() {
   const [username, setUsername] = useState('')
@@ -46,9 +72,15 @@ export default function Home() {
             <form className="claim-form" onSubmit={handleClaim}>
               <div className="input-wrapper">
                 <span className="input-prefix">hiprofile.bio/</span>
-                <input type="text" placeholder="yourname" aria-label="Username" readOnly style={{ cursor: 'default' }} />
+                <input
+                  type="text"
+                  placeholder="yourname"
+                  aria-label="Username"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                />
               </div>
-              <button type="submit" className="btn-claim"><span>Claim your profile</span><span className="arrow">→</span></button>
+              <button type="submit" className="btn-claim" id="btn-claim-landing"><span>Claim your profile</span><span className="arrow">→</span></button>
             </form>
             <p className="claim-meta">No credit card required · Free forever · Setup in 2 minutes</p>
             <div className="social-proof">
@@ -114,7 +146,7 @@ export default function Home() {
                 <p className="profile-title">Product Designer at Figma</p>
                 <p className="profile-bio">Designing the future of collaborative tools.</p>
                 <div className="profile-links">
-                  {['💻 Portfolio','🏀 Dribbble','💼 LinkedIn','🐦 Twitter'].map(l=><a href="#" className="profile-link-btn" key={l}>{l}</a>)}
+                  {['💻 Portfolio','🏀 Dribbble','💼 LinkedIn','🐦 Twitter'].map(l=><a href="#" className="profile-link-btn" key={l}>{renderLinkButtonContent(l)}</a>)}
                 </div>
               </div>
             </div>
@@ -126,7 +158,7 @@ export default function Home() {
                 <p className="profile-title">Full-Stack Developer &amp; Open Source</p>
                 <p className="profile-bio">Building tools for developers. Creator of 12 open source projects.</p>
                 <div className="profile-links">
-                  {['🐙 GitHub','✍️ Blog','🐦 Twitter','📄 Resume'].map(l=><a href="#" className="profile-link-btn" key={l}>{l}</a>)}
+                  {['🐙 GitHub','✍️ Blog','🐦 Twitter','📄 Resume'].map(l=><a href="#" className="profile-link-btn" key={l}>{renderLinkButtonContent(l)}</a>)}
                 </div>
               </div>
             </div>
@@ -138,7 +170,7 @@ export default function Home() {
                 <p className="profile-title">Photographer &amp; Visual Artist</p>
                 <p className="profile-bio">Capturing life's fleeting moments. Based in Tokyo.</p>
                 <div className="profile-links">
-                  {['📸 Instagram','🖼️ Shop Prints','🎨 Commissions'].map(l=><a href="#" className="profile-link-btn" key={l}>{l}</a>)}
+                  {['📸 Instagram','🖼️ Shop Prints','🎨 Commissions'].map(l=><a href="#" className="profile-link-btn" key={l}>{renderLinkButtonContent(l)}</a>)}
                 </div>
               </div>
             </div>
@@ -150,7 +182,7 @@ export default function Home() {
                 <p className="profile-title">Indie Maker &amp; Entrepreneur</p>
                 <p className="profile-bio">Built 7 products. 3 profitable. Sharing the journey.</p>
                 <div className="profile-links">
-                  {['🚀 Products','✉️ Newsletter','🐦 Twitter','🎙️ Podcast'].map(l=><a href="#" className="profile-link-btn" key={l}>{l}</a>)}
+                  {['🚀 Products','✉️ Newsletter','🐦 Twitter','🎙️ Podcast'].map(l=><a href="#" className="profile-link-btn" key={l}>{renderLinkButtonContent(l)}</a>)}
                 </div>
               </div>
             </div>
@@ -246,11 +278,19 @@ export default function Home() {
           <div className="footer-info">
             <a href="#" className="logo-link"><div className="logo-icon"><img src="/assets/images/logo.png" alt="hiprofile logo" className="logo-img" /></div><span className="logo-text">hiprofile</span></a>
             <p className="footer-desc">The personal page for makers, creators, and curious minds.</p>
-            <div className="social-links">
-              <a href="#" className="social-icon" aria-label="Twitter">🕊️</a>
-              <a href="#" className="social-icon" aria-label="GitHub">🐙</a>
-              <a href="#" className="social-icon" aria-label="Instagram">📸</a>
-              <a href="#" className="social-icon" aria-label="LinkedIn">💼</a>
+            <div className="social-links" style={{ display: 'flex', gap: 12 }}>
+              <a href="#" className="social-icon" aria-label="Twitter" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {getSocialIcon('twitter', 20, '#64748B')}
+              </a>
+              <a href="#" className="social-icon" aria-label="GitHub" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {getSocialIcon('github', 20, '#64748B')}
+              </a>
+              <a href="#" className="social-icon" aria-label="Instagram" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {getSocialIcon('instagram', 20, '#64748B')}
+              </a>
+              <a href="#" className="social-icon" aria-label="LinkedIn" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                {getSocialIcon('linkedin', 20, '#64748B')}
+              </a>
             </div>
           </div>
           {[['PRODUCT',['Features','Pricing','Examples','Changelog','Roadmap']],['COMPANY',['About','Blog','Careers','Press']],['RESOURCES',['Documentation','Help Center','Community','API']],['LEGAL',['Privacy Policy','Terms of Service','Cookie Policy','GDPR']]].map(([h,links])=>(

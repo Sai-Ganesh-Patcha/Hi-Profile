@@ -25,7 +25,13 @@ export default function Select() {
   const handleContinue = () => {
     setSelectedTemplate(selected)
     toast(`Template saved: ${selected === 'bento' ? 'Bento Profile' : 'Professional Timeline'}!`)
-    setTimeout(() => navigate('/'), 1400)
+    setTimeout(() => {
+      if (selected === 'timeline') {
+        navigate('/timeline')
+      } else {
+        navigate('/bento')
+      }
+    }, 1400)
   }
 
   const cardStyle = (id) => ({

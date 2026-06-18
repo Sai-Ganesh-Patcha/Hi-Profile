@@ -8,6 +8,8 @@ import Upload   from './pages/Upload'
 import Profile  from './pages/Profile'
 import Setup    from './pages/Setup'
 import Select   from './pages/Select'
+import TimelineView from './pages/TimelineView'
+import BentoView from './pages/BentoView'
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
           <Route path="/profile"  element={<Profile />} />
           <Route path="/setup"    element={<Setup />} />
           <Route path="/select"   element={<Select />} />
+          <Route path="/timeline" element={<TimelineView />} />
+          <Route path="/bento"    element={<BentoView />} />
         </Routes>
       </OnboardingProvider>
     </BrowserRouter>
