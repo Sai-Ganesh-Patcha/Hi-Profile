@@ -205,7 +205,7 @@ export default function TimelineView() {
     if (selectedTemplate === 'bento') {
       navigate('/bento')
     } else {
-      navigate('/bento')
+      navigate('/timeline-live')
     }
   }
 

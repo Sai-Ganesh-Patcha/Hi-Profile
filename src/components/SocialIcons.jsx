@@ -1,5 +1,247 @@
 import React from 'react'
 
+// Export 110+ Social Platforms list
+export const SOCIAL_PLATFORMS = [
+  // Websites
+  "Website",
+  "Portfolio",
+  "Blog",
+
+  // Developer
+  "GitHub",
+  "GitLab",
+  "Bitbucket",
+  "Stack Overflow",
+  "CodePen",
+  "JSFiddle",
+  "Replit",
+  "Glitch",
+  "CodeSandbox",
+  "LeetCode",
+  "HackerRank",
+  "CodeChef",
+  "HackerEarth",
+  "TopCoder",
+  "Kaggle",
+  "Dev.to",
+  "Hashnode",
+  "Medium",
+  "FreeCodeCamp",
+
+  // Professional
+  "LinkedIn",
+  "AngelList",
+  "Wellfound",
+  "Crunchbase",
+  "Indeed",
+  "Upwork",
+  "Fiverr",
+  "Freelancer",
+  "Toptal",
+
+  // Social Media
+  "Facebook",
+  "Instagram",
+  "Threads",
+  "Twitter",
+  "X",
+  "Bluesky",
+  "Mastodon",
+  "Snapchat",
+  "Pinterest",
+  "Tumblr",
+  "Reddit",
+  "Quora",
+
+  // Messaging
+  "WhatsApp",
+  "Telegram",
+  "Discord",
+  "Messenger",
+  "Signal",
+  "Skype",
+  "WeChat",
+  "Line",
+  "Viber",
+
+  // Video Platforms
+  "YouTube",
+  "TikTok",
+  "Twitch",
+  "Kick",
+  "Vimeo",
+  "Dailymotion",
+  "Rumble",
+  "Bilibili",
+
+  // Music
+  "Spotify",
+  "Apple Music",
+  "SoundCloud",
+  "Bandcamp",
+  "Audiomack",
+  "Deezer",
+  "Tidal",
+
+  // Design
+  "Dribbble",
+  "Behance",
+  "Figma",
+  "Adobe Portfolio",
+  "Canva",
+  "ArtStation",
+  "DeviantArt",
+
+  // Creator Economy
+  "Patreon",
+  "Ko-fi",
+  "Buy Me A Coffee",
+  "Substack",
+  "Gumroad",
+  "Koji",
+  "OnlyFans",
+
+  // Ecommerce
+  "Amazon",
+  "Flipkart",
+  "Shopify",
+  "Etsy",
+  "eBay",
+
+  // Gaming
+  "Steam",
+  "Epic Games",
+  "Xbox",
+  "PlayStation",
+  "Nintendo",
+  "Roblox",
+
+  // Mobile Apps
+  "Google Play",
+  "App Store",
+
+  // Education
+  "Coursera",
+  "Udemy",
+  "Skillshare",
+  "edX",
+
+  // Photography
+  "Flickr",
+  "500px",
+  "Unsplash",
+  "Pixiv",
+
+  // Business
+  "Google Business",
+  "Google Maps",
+  "Yelp",
+
+  // Communities
+  "Slack",
+  "Guilded",
+  "Discourse",
+
+  // Crypto
+  "Coinbase",
+  "Binance",
+  "OpenSea",
+
+  // Contact
+  "Email",
+  "Phone",
+  "SMS",
+  "Address",
+
+  // Documents
+  "Resume",
+  "CV",
+  "Google Drive",
+  "Dropbox",
+  "Notion",
+
+  // Misc
+  "IMDb",
+  "Product Hunt",
+  "Wikipedia",
+  "Linktree",
+  "Bio.link",
+
+  // Extra Enterprise-Level
+  "Strava",
+  "Letterboxd",
+  "Goodreads",
+  "ResearchGate",
+  "ORCID",
+  "Mixcloud",
+  "Anchor",
+  "VSCO",
+  "Telegram Channel",
+  "Discord Server",
+  "Trello",
+  "Jira",
+  "Airtable",
+  "Coda",
+  "Miro",
+  "Loom",
+  "Calendly",
+  "Zoom",
+  "Google Meet",
+  "Microsoft Teams",
+  "PayPal",
+  "Razorpay",
+  "Stripe",
+  "Paytm",
+  "Venmo",
+  "Cash App"
+]
+
+// Brand colors database mapping
+const BRAND_COLORS = {
+  website: '#3E66FB', portfolio: '#10B981', blog: '#F59E0B',
+  github: '#24292F', gitlab: '#FC6D26', bitbucket: '#0052CC', 'stack overflow': '#F48024',
+  codepen: '#000000', jsfiddle: '#4679a4', replit: '#007ACC', glitch: '#2800ff',
+  codesandbox: '#151515', leetcode: '#FFA116', hackerrank: '#2EC866', codechef: '#5B4636',
+  hackerearth: '#32373B', topcoder: '#29A8E0', kaggle: '#20BEFF', 'dev.to': '#0A0A0A',
+  hashnode: '#2962FF', medium: '#000000', freecodecamp: '#0A0A23',
+  linkedin: '#0A66C2', angellist: '#000000', wellfound: '#000000', crunchbase: '#0288D1',
+  indeed: '#002F87', upwork: '#14A800', fiverr: '#1DBF73', freelancer: '#29B2FE', toptal: '#3863A0',
+  facebook: '#1877F2', instagram: '#E1306C', threads: '#000000', twitter: '#1DA1F2', x: '#000000',
+  bluesky: '#0085FF', mastodon: '#6364FF', snapchat: '#FFFC00', pinterest: '#E60023',
+  tumblr: '#35465C', reddit: '#FF4500', quora: '#B92B27',
+  whatsapp: '#25D366', telegram: '#229ED9', discord: '#5865F2', messenger: '#0084FF',
+  signal: '#3A76F0', skype: '#00AFF0', wechat: '#07C160', line: '#06C755', viber: '#7360F2',
+  youtube: '#FF0000', tiktok: '#000000', twitch: '#9146FF', kick: '#53FC18',
+  vimeo: '#1AB7EA', dailymotion: '#0066DC', rumble: '#85B73E', bilibili: '#00A1D6',
+  spotify: '#1DB954', 'apple music': '#FC3C44', soundcloud: '#FF3300', bandcamp: '#1EA0C4',
+  audiomack: '#FFA200', deezer: '#FF0000', tidal: '#000000',
+  dribbble: '#EA4C89', behance: '#0057FF', figma: '#F24E1E', 'adobe portfolio': '#000000',
+  canva: '#00C4CC', artstation: '#13AFF0', deviantart: '#05CC47',
+  patreon: '#FF424D', 'ko-fi': '#FF5E5B', 'buy me a coffee': '#FFDD00', substack: '#FF573C',
+  gumroad: '#36A5E3', koji: '#FF3366', onlyfans: '#0088CC',
+  amazon: '#FF9900', flipkart: '#2874F0', shopify: '#96BF48', etsy: '#D5641C', ebay: '#E53238',
+  steam: '#000000', 'epic games': '#313131', xbox: '#107C10', playstation: '#003087',
+  nintendo: '#E60012', roblox: '#111111',
+  'google play': '#607D8B', 'app store': '#0070C9',
+  coursera: '#0056D2', udemy: '#A435F0', skillshare: '#002333', edx: '#D91C5C',
+  flickr: '#FF0084', '500px': '#000000', unsplash: '#000000', pixiv: '#0096FA',
+  'google business': '#4285F4', 'google maps': '#4285F4', yelp: '#D32323',
+  slack: '#4A154B', guilded: '#F5C400', discourse: '#212121',
+  coinbase: '#0052FF', binance: '#F0B90B', opensea: '#2081E2',
+  email: '#EA4335', phone: '#34A853', sms: '#00C853', address: '#DB4437',
+  resume: '#2196F3', cv: '#4CAF50', 'google drive': '#4285F4', dropbox: '#0061FE', notion: '#000000',
+  imdb: '#F5C518', 'product hunt': '#DA552F', wikipedia: '#000000', linktree: '#39E09B', 'bio.link': '#000000',
+  strava: '#FC6200', letterboxd: '#FF8000', goodreads: '#372213', researchgate: '#00CCBB', orcid: '#A6CE39',
+  mixcloud: '#52AAD8', anchor: '#5015B4', vsco: '#000000', 'telegram channel': '#229ED9', 'discord server': '#5865F2',
+  trello: '#0079BF', jira: '#0052CC', airtable: '#18BFFF', coda: '#F05A28', miro: '#050038', loom: '#625DF5',
+  calendly: '#006BFF', zoom: '#2D8CFF', 'google meet': '#00897B', 'microsoft teams': '#4B53BC',
+  paypal: '#003087', razorpay: '#0A2540', stripe: '#008CDD', paytm: '#00B9F5', venmo: '#008CFF', 'cash app': '#00D632'
+}
+
+// ----------------------------------------------------
+// 1. SPECIFIC HIGH-FIDELITY BRAND SVG ICONS
+// ----------------------------------------------------
+
 export const TwitterIcon = ({ size = 20, color = 'currentColor', ...props }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -9,7 +251,7 @@ export const TwitterIcon = ({ size = 20, color = 'currentColor', ...props }) => 
 export const InstagramIcon = ({ size = 20, color = 'currentColor', ...props }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill={color === 'currentColor' ? 'none' : 'currentColor'} />
+    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
   </svg>
 )
@@ -68,7 +310,47 @@ export const GoogleIcon = ({ size = 20, color = 'currentColor', ...props }) => (
   </svg>
 )
 
-export const WebsiteIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+export const SpotifyIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
+    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.485 17.308c-.212.345-.664.457-1.008.243-2.783-1.702-6.286-2.087-10.413-1.144-.393.09-.792-.162-.882-.555-.09-.393.162-.792.555-.882 4.508-1.03 8.375-.595 11.5 1.316.345.212.457.664.243 1.008zm1.464-3.262c-.267.433-.833.574-1.266.307-3.187-1.958-8.046-2.525-11.815-1.382-.486.147-.997-.132-1.144-.618-.147-.486.132-.997.618-1.144 4.307-1.307 9.664-.672 13.315 1.572.433.267.574.833.307 1.266zm.126-3.41c-3.82-2.27-10.12-2.48-13.733-1.383-.586.178-1.205-.157-1.383-.743-.178-.586.157-1.205.743-1.383 4.167-1.265 11.13-1.01 15.545 1.614.526.312.7.992.388 1.518-.313.526-.992.7-1.518.388z"/>
+  </svg>
+)
+
+export const SlackIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
+    <path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523 2.528 2.528 0 01-2.522-2.523 2.528 2.528 0 012.522-2.52h2.52v2.52zm1.261 0a2.528 2.528 0 012.52-2.52h5.043a2.528 2.528 0 012.522 2.52v5.043a2.528 2.528 0 01-2.522 2.52H8.824a2.528 2.528 0 01-2.52-2.52v-5.043zm0-6.326a2.528 2.528 0 012.52-2.522 2.528 2.528 0 012.522 2.522v2.52H8.824a2.528 2.528 0 01-2.52-2.52zm0-1.261a2.528 2.528 0 012.52-2.522 2.528 2.528 0 012.522 2.522v5.043a2.528 2.528 0 01-2.522 2.52H8.824a2.528 2.528 0 01-2.52-2.52V7.578zm6.326-5.042a2.528 2.528 0 012.522-2.52 2.528 2.528 0 012.52 2.52v2.52h-2.52a2.528 2.528 0 01-2.522-2.52zm0 1.261a2.528 2.528 0 012.522 2.52v5.043a2.528 2.528 0 01-2.522 2.52H8.824a2.528 2.528 0 01-2.52-2.52V8.839zm6.327 6.326a2.528 2.528 0 012.52-2.52h2.52a2.528 2.528 0 012.522 2.52 2.528 2.528 0 01-2.522 2.523h-2.52v-2.523zm-1.262 0a2.528 2.528 0 01-2.52 2.52H10.08a2.528 2.528 0 01-2.52-2.52V10.08a2.528 2.528 0 012.52-2.52h5.043a2.528 2.528 0 012.52 2.52v5.043z"/>
+  </svg>
+)
+
+export const TelegramIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
+    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.12.02-1.96 1.24-5.54 3.65-.52.36-.99.53-1.41.52-.46-.01-1.35-.26-2.01-.48-.81-.27-1.46-.42-1.4-.88.03-.24.37-.49 1.02-.74 4-1.74 6.67-2.88 8.01-3.43 3.81-1.56 4.6-1.83 5.12-1.84.11 0 .37.03.54.17.14.12.18.28.2.45-.02.07-.02.16-.03.24z"/>
+  </svg>
+)
+
+export const PaypalIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
+    <path d="M20.007 8.002c-.754 3.903-3.328 6.002-7.55 6.002H9.362L7.994 22h-3.66L7.382 2.8h7.797c4.103 0 5.617 1.848 4.828 5.202zm-5.074.198c.365-1.9-.452-2.8-2.316-2.8H9.362l-1.368 7.6h2.905c1.9 0 3.328-.9 3.693-2.8h.334z"/>
+  </svg>
+)
+
+export const StripeIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
+    <path d="M13.994 10.893c0-1.282.723-1.849 1.954-1.849 1.258 0 1.93.565 1.93 1.849 0 1.254-.672 1.848-1.93 1.848-1.231 0-1.954-.594-1.954-1.848zm-4.708 0c0-1.282.723-1.849 1.954-1.849 1.258 0 1.93.565 1.93 1.849 0 1.254-.672 1.848-1.93 1.848-1.231 0-1.954-.594-1.954-1.848zm4.708-4.996c0-1.282.723-1.849 1.954-1.849 1.258 0 1.93.565 1.93 1.849 0 1.254-.672 1.848-1.93 1.848-1.231 0-1.954-.594-1.954-1.848zm-4.708 0c0-1.282.723-1.849 1.954-1.849 1.258 0 1.93.565 1.93 1.849 0 1.254-.672 1.848-1.93 1.848-1.231 0-1.954-.594-1.954-1.848zm-1.848 12.18c0 3.396 2.766 6.162 6.162 6.162s6.162-2.766 6.162-6.162-2.766-6.162-6.162-6.162-6.162 2.766-6.162 6.162z"/>
+  </svg>
+)
+
+export const NotionIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
+    <path d="M4.6 2h14.8c1.4 0 2.6 1.2 2.6 2.6v14.8c0 1.4-1.2 2.6-2.6 2.6H4.6C3.2 22 2 20.8 2 19.4V4.6C2 3.2 3.2 2 4.6 2zm4.5 14.5l-1.3-4.9h-.1l-.6 1.8-1.1 3.1h-.9l-1.9-5.4h1.1l1.1 3.5h.1l.6-1.8 1.1-3.1h1l1.3 4.9h.1l1.1-3.5h1.1l-1.9 5.4h-.8zm7.3 0c-1.6 0-2.6-1-2.6-2.7s1-2.7 2.6-2.7 2.6 1 2.6 2.7-1 2.7-2.6 2.7zm0-1c.9 0 1.5-.7 1.5-1.7s-.6-1.7-1.5-1.7-1.5.7-1.5 1.7.6 1.7 1.5 1.7zm-2.9-6.3h-1.6V8.1h1.6v1.1z"/>
+  </svg>
+)
+
+// ----------------------------------------------------
+// 2. SEMANTIC CATEGORY FALLBACK SVG ICONS
+// ----------------------------------------------------
+
+export const GlobeIcon = ({ size = 20, color = 'currentColor', ...props }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="12" cy="12" r="10" />
     <line x1="2" y1="12" x2="22" y2="12" />
@@ -76,20 +358,119 @@ export const WebsiteIcon = ({ size = 20, color = 'currentColor', ...props }) => 
   </svg>
 )
 
-export const SpotifyIcon = ({ size = 20, color = 'currentColor', ...props }) => (
-  <svg viewBox="0 0 24 24" width={size} height={size} fill={color} {...props}>
-    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.485 17.308c-.212.345-.664.457-1.008.243-2.783-1.702-6.286-2.087-10.413-1.144-.393.09-.792-.162-.882-.555-.09-.393.162-.792.555-.882 4.508-1.03 8.375-.595 11.5 1.316.345.212.457.664.243 1.008zm1.464-3.262c-.267.433-.833.574-1.266.307-3.187-1.958-8.046-2.525-11.815-1.382-.486.147-.997-.132-1.144-.618-.147-.486.132-.997.618-1.144 4.307-1.307 9.664-.672 13.315 1.572.433.267.574.833.307 1.266zm.126-3.41c-3.82-2.27-10.12-2.48-13.733-1.383-.586.178-1.205-.157-1.383-.743-.178-.586.157-1.205.743-1.383 4.167-1.265 11.13-1.01 15.545 1.614.526.312.7.992.388 1.518-.313.526-.992.7-1.518.388z"/>
+export const CodeIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polyline points="16 18 22 12 16 6" />
+    <polyline points="8 6 2 12 8 18" />
   </svg>
 )
 
+export const MessageIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+)
+
+export const VideoIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <polygon points="23 7 16 12 23 17 23 7" />
+    <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+  </svg>
+)
+
+export const MusicIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+)
+
+export const DesignIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
+    <path d="M12 6A1.5 1.5 0 1 0 12 9A1.5 1.5 0 1 0 12 6Z" fill={color} />
+    <path d="M7.5 9.5A1.5 1.5 0 1 0 7.5 12.5A1.5 1.5 0 1 0 7.5 9.5Z" fill={color} />
+    <path d="M16.5 9.5A1.5 1.5 0 1 0 16.5 12.5A1.5 1.5 0 1 0 16.5 9.5Z" fill={color} />
+    <path d="M12 14.5A1.5 1.5 0 1 0 12 17.5A1.5 1.5 0 1 0 12 14.5Z" fill={color} />
+  </svg>
+)
+
+export const DollarIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <line x1="12" y1="1" x2="12" y2="23" />
+    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+  </svg>
+)
+
+export const BookIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+  </svg>
+)
+
+export const CameraIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+)
+
+export const MapIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+    <circle cx="12" cy="10" r="3" />
+  </svg>
+)
+
+export const FileIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+)
+
+export const GameIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <path d="M6 12h4m-2-2v4M15 11h.01M18 13h.01" strokeWidth="3" />
+  </svg>
+)
+
+export const BriefcaseIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+    <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </svg>
+)
+
+export const PhoneIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+  </svg>
+)
+
+export const EmailIcon = ({ size = 20, color = 'currentColor', ...props }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+    <polyline points="22,6 12,13 2,6" />
+  </svg>
+)
+
+// ----------------------------------------------------
+// 3. MASTER RESOLVERS (ICONS & BRAND COLORS)
+// ----------------------------------------------------
+
 export const getSocialIcon = (platform, size = 20, color = 'currentColor') => {
   const p = String(platform).toLowerCase().trim()
+
+  // High-fidelity matches
   if (p.includes('github')) return <GithubIcon size={size} color={color} />
-  if (p.includes('twitter') || p.includes(' x ')) {
-    // Check if it's literally x or includes twitter
-    return <TwitterIcon size={size} color={color} />
-  }
-  if (p === 'x') return <TwitterIcon size={size} color={color} />
+  if (p.includes('twitter') || p === 'x' || p.includes('x.com')) return <TwitterIcon size={size} color={color} />
   if (p.includes('linkedin')) return <LinkedinIcon size={size} color={color} />
   if (p.includes('instagram')) return <InstagramIcon size={size} color={color} />
   if (p.includes('youtube')) return <YoutubeIcon size={size} color={color} />
@@ -100,22 +481,72 @@ export const getSocialIcon = (platform, size = 20, color = 'currentColor') => {
   if (p.includes('discord')) return <DiscordIcon size={size} color={color} />
   if (p.includes('google')) return <GoogleIcon size={size} color={color} />
   if (p.includes('spotify')) return <SpotifyIcon size={size} color={color} />
-  return <WebsiteIcon size={size} color={color} />
+  if (p.includes('slack')) return <SlackIcon size={size} color={color} />
+  if (p.includes('telegram')) return <TelegramIcon size={size} color={color} />
+  if (p.includes('paypal')) return <PaypalIcon size={size} color={color} />
+  if (p.includes('stripe')) return <StripeIcon size={size} color={color} />
+  if (p.includes('notion')) return <NotionIcon size={size} color={color} />
+  if (p.includes('email') || p.includes('mail')) return <EmailIcon size={size} color={color} />
+  if (p.includes('phone') || p.includes('tel')) return <PhoneIcon size={size} color={color} />
+
+  // Semantic mappings
+  // Developer
+  if (['gitlab', 'bitbucket', 'stack overflow', 'codepen', 'jsfiddle', 'replit', 'glitch', 'codesandbox', 'leetcode', 'hackerrank', 'codechef', 'hackerearth', 'topcoder', 'kaggle', 'dev.to', 'hashnode', 'medium', 'freecodecamp', 'jira', 'trello', 'airtable', 'coda'].some(dev => p.includes(dev))) {
+    return <CodeIcon size={size} color={color} />
+  }
+  // Video
+  if (['tiktok', 'twitch', 'kick', 'vimeo', 'dailymotion', 'rumble', 'bilibili', 'loom', 'zoom', 'google meet', 'microsoft teams'].some(vid => p.includes(vid))) {
+    return <VideoIcon size={size} color={color} />
+  }
+  // Music
+  if (['apple music', 'soundcloud', 'bandcamp', 'audiomack', 'deezer', 'tidal', 'mixcloud', 'anchor'].some(mus => p.includes(mus))) {
+    return <MusicIcon size={size} color={color} />
+  }
+  // Messaging/Communities
+  if (['messenger', 'signal', 'skype', 'wechat', 'line', 'viber', 'bluesky', 'mastodon', 'threads', 'snapchat', 'pinterest', 'tumblr', 'reddit', 'quora', 'guilded', 'discourse'].some(msg => p.includes(msg))) {
+    return <MessageIcon size={size} color={color} />
+  }
+  // Design/Art
+  if (['figma', 'adobe portfolio', 'canva', 'artstation', 'deviantart', 'vsco'].some(des => p.includes(des))) {
+    return <DesignIcon size={size} color={color} />
+  }
+  // Creator Economy / Ecommerce / Crypto / Payment
+  if (['patreon', 'ko-fi', 'buy me a coffee', 'substack', 'gumroad', 'koji', 'onlyfans', 'amazon', 'flipkart', 'shopify', 'etsy', 'ebay', 'coinbase', 'binance', 'opensea', 'razorpay', 'paytm', 'venmo', 'cash app'].some(ec => p.includes(ec))) {
+    return <DollarIcon size={size} color={color} />
+  }
+  // Education
+  if (['coursera', 'udemy', 'skillshare', 'edx', 'researchgate', 'orcid', 'goodreads'].some(ed => p.includes(ed))) {
+    return <BookIcon size={size} color={color} />
+  }
+  // Photography
+  if (['flickr', '500px', 'unsplash', 'pixiv'].some(ph => p.includes(ph))) {
+    return <CameraIcon size={size} color={color} />
+  }
+  // Maps/Business
+  if (['google business', 'google maps', 'yelp', 'address', 'strava', 'maps'].some(mp => p.includes(mp))) {
+    return <MapIcon size={size} color={color} />
+  }
+  // Documents
+  if (['resume', 'cv', 'google drive', 'dropbox', 'miro'].some(doc => p.includes(doc))) {
+    return <FileIcon size={size} color={color} />
+  }
+  // Gaming
+  if (['steam', 'epic games', 'xbox', 'playstation', 'nintendo', 'roblox'].some(gam => p.includes(gam))) {
+    return <GameIcon size={size} color={color} />
+  }
+
+  // Fallback to website/globe
+  return <GlobeIcon size={size} color={color} />
 }
 
 export const getSocialBrandColor = (platform) => {
   const p = String(platform).toLowerCase().trim()
-  if (p.includes('github')) return '#24292F'
-  if (p.includes('twitter') || p === 'x') return '#000000'
-  if (p.includes('linkedin')) return '#0A66C2'
-  if (p.includes('instagram')) return '#E1306C'
-  if (p.includes('youtube')) return '#FF0000'
-  if (p.includes('dribbble')) return '#EA4C89'
-  if (p.includes('behance')) return '#0057FF'
-  if (p.includes('facebook')) return '#1877F2'
-  if (p.includes('whatsapp')) return '#25D366'
-  if (p.includes('discord')) return '#5865F2'
-  if (p.includes('google')) return '#EA4335'
-  if (p.includes('spotify')) return '#1DB954'
-  return '#3E66FB'
+  
+  // Find key in database that matches or is included in platform string
+  const key = Object.keys(BRAND_COLORS).find(k => p.includes(k) || k.includes(p))
+  if (key) {
+    return BRAND_COLORS[key]
+  }
+
+  return '#3E66FB' // Default premium blue brand color
 }
