@@ -4096,6 +4096,80 @@ section {
     box-shadow: 0 4px 12px rgba(96, 165, 250, 0.2);
 }
 
+/* Delete button on hover */
+.delete-block-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #EAEAEF;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.bento-profile-wrapper.dark-mode-active .delete-block-btn {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: #475569;
+    color: #F8FAFC;
+}
+
+.bento-card-base:hover .delete-block-btn {
+    opacity: 1;
+}
+
+.delete-block-btn:hover {
+    transform: scale(1.1) rotate(5deg);
+    background: #EF4444;
+    border-color: #EF4444;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.bento-profile-wrapper.dark-mode-active .delete-block-btn:hover {
+    background: #DC2626;
+    border-color: #DC2626;
+    color: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* List Block Item Styles */
+.list-editor-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 6px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    transition: background-color 0.2s, opacity 0.2s;
+}
+
+.bento-profile-wrapper.dark-mode-active .list-editor-item {
+    background: #334155;
+    border-color: #475569;
+}
+
+.list-editor-item:hover {
+    background: #EFF6FF;
+    border-color: #3E66FB;
+}
+
+.bento-profile-wrapper.dark-mode-active .list-editor-item:hover {
+    background: #1E293B;
+    border-color: #60A5FA;
+}
+
 /* Responsiveness for Bento view */
 @media (max-width: 900px) {
     .bento-nav-header {
