@@ -4,6 +4,128 @@ import { useOnboarding } from '../context/OnboardingContext'
 import Toast, { useToast } from '../components/Toast'
 import { getSocialIcon, getSocialBrandColor } from '../components/SocialIcons'
 
+// Collides two blocks
+const collides = (b1, b2) => {
+  if (b1.id === b2.id) return false;
+  return (
+    b1.x < b2.x + b2.w &&
+    b1.x + b1.w > b2.x &&
+    b1.y < b2.y + b2.h &&
+    b1.y + b1.h > b2.y
+  );
+};
+
+// Resolve collisions by pushing overlapping blocks down. If applyGravity is true, compact blocks upwards.
+const resolveLayout = (blocks, movingBlock, applyGravity = false) => {
+  const sorted = [...blocks].sort((a, b) => {
+    if (a.y !== b.y) return a.y - b.y;
+    return a.x - b.x;
+  });
+
+  const resolved = [];
+  
+  if (movingBlock) {
+    resolved.push({ ...movingBlock });
+  }
+
+  for (const block of sorted) {
+    if (movingBlock && block.id === movingBlock.id) continue;
+
+    let targetBlock = { ...block };
+    
+    // Resolve collisions by moving the block down until it doesn't collide with any already-resolved blocks
+    while (resolved.some(r => collides(r, targetBlock))) {
+      targetBlock.y += 1;
+    }
+    
+    resolved.push(targetBlock);
+  }
+
+  if (!applyGravity) {
+    return resolved;
+  }
+
+  // Final compaction: push elements upwards if there's empty space below them (gravity)
+  const compacted = [];
+  const sortedResolved = resolved.sort((a, b) => a.y - b.y);
+
+  for (const block of sortedResolved) {
+    let targetBlock = { ...block };
+    if (movingBlock && block.id === movingBlock.id) {
+      compacted.push(targetBlock);
+      continue;
+    }
+
+    while (targetBlock.y > 0) {
+      targetBlock.y -= 1;
+      if (compacted.some(c => collides(c, targetBlock))) {
+        targetBlock.y += 1; // move back down
+        break;
+      }
+    }
+    compacted.push(targetBlock);
+  }
+
+  return compacted;
+};
+
+// Data migration placing function
+const placeBlocks = (blocks, applyGravity = false) => {
+  let placed = [];
+  for (const block of blocks) {
+    if (block.x !== undefined && block.y !== undefined) {
+      placed.push(block);
+      continue;
+    }
+    
+    // Determine default w and h
+    let w = 2; // default medium
+    if (block.w !== undefined) {
+      w = block.w;
+    } else if (block.gridSpan) {
+      if (block.gridSpan <= 3) w = 1;
+      else if (block.gridSpan <= 6) w = 2;
+      else if (block.gridSpan <= 9) w = 3;
+      else w = 4;
+    } else {
+      if (block.type === 'location' || block.type === 'image' || block.type === 'custom-emoji') w = 1;
+    }
+
+    let h = (block.type === 'youtube' || block.type === 'behance') ? 2 : 1;
+    if (block.h !== undefined) {
+      h = block.h;
+    } else if (block.customHeight) {
+      h = Math.max(1, Math.round((block.customHeight + 24) / 184));
+    }
+
+    let x = 0;
+    let y = 0;
+    let target = { id: block.id, x, y, w, h };
+    
+    while (true) {
+      target.x = x;
+      target.y = y;
+      if (x + w <= 4 && !placed.some(p => collides(p, target))) {
+        break;
+      }
+      x += 1;
+      if (x >= 4) {
+        x = 0;
+        y += 1;
+      }
+    }
+
+    placed.push({
+      ...block,
+      x,
+      y,
+      w,
+      h
+    });
+  }
+  return resolveLayout(placed, null, applyGravity);
+};
+
 function AvatarDisplay({ avatar }) {
   if (avatar?.type === 'file' && avatar.data) {
     return <img src={avatar.data} alt="avatar" style={{ transform: avatar.transform, width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -17,12 +139,11 @@ function AvatarDisplay({ avatar }) {
 export default function BentoView() {
   const { theme, setTheme, avatar, profileName, profileBio, location, socialLinks, profileCardFont } = useOnboarding()
   const navigate = useNavigate()
-  
+
   // Custom states for interactivity
   const [toastMsg, toastShow, toast] = useToast()
   const [followed, setFollowed] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
   const [isDark, setIsDark] = useState(theme === 'dark')
   const [gridSpacing, setGridSpacing] = useState(false)
   const [editingBlockId, setEditingBlockId] = useState(null)
@@ -44,23 +165,49 @@ export default function BentoView() {
     return fallback;
   }
 
+  // Layout mode state loaded from localStorage
+  const [freeGridMode, setFreeGridMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('bento_free_grid_mode');
+      return saved ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('bento_free_grid_mode', JSON.stringify(freeGridMode));
+  }, [freeGridMode]);
+
   // Dynamic blocks state with localStorage persistence
   const [gridBlocks, setGridBlocks] = useState(() => {
     try {
       const saved = localStorage.getItem('bento_grid_blocks');
       if (saved) {
-        return JSON.parse(saved);
+        const blocks = JSON.parse(saved);
+        let isFree = true;
+        try {
+          const modeSaved = localStorage.getItem('bento_free_grid_mode');
+          if (modeSaved !== null) isFree = JSON.parse(modeSaved);
+        } catch {}
+        return placeBlocks(blocks, !isFree);
       }
     } catch (e) {
       console.error(e);
     }
-    return [
+    const defaultBlocks = [
       { id: 'loc-block', type: 'location', content: userLocation },
       { id: 'git-block', type: 'github', username: getUsername('github', 'santoshpl') },
       { id: 'img-block', type: 'image', url: '/assets/images/featured_brand_mockup.png' },
       { id: 'beh-block', type: 'behance', title: getUsername('dribbble', 'PurpleLane') + ' Design' },
       { id: 'yt-block', type: 'youtube', title: getUsername('youtube', 'PurpleLane') }
     ];
+    let isFree = true;
+    try {
+      const modeSaved = localStorage.getItem('bento_free_grid_mode');
+      if (modeSaved !== null) isFree = JSON.parse(modeSaved);
+    } catch {}
+    return placeBlocks(defaultBlocks, !isFree);
   });
 
   useEffect(() => {
@@ -80,8 +227,340 @@ export default function BentoView() {
   const [draggedItemIndex, setDraggedItemIndex] = useState(null)
   const lastItemRef = useRef(null)
 
-  // Drag and drop block states
-  const [draggedBlockId, setDraggedBlockId] = useState(null)
+  // Container width state and ResizeObserver ref
+  const containerRef = useRef(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // Pointer-based Drag & Drop States
+  const [potentialDrag, setPotentialDrag] = useState(null);
+  const [activeDrag, setActiveDrag] = useState(null);
+
+  // Pointer-based Resize States
+  const [activeResize, setActiveResize] = useState(null);
+
+  // Map state to variables used in layout rendering
+  const draggedBlockId = activeDrag ? activeDrag.blockId : null;
+  const dragPreview = activeDrag ? { x: activeDrag.snapX, y: activeDrag.snapY, w: activeDrag.w, h: activeDrag.h } : null;
+  
+  const resizingBlockId = activeResize ? activeResize.blockId : null;
+  const resizePreview = activeResize ? { id: activeResize.blockId, x: activeResize.snapX, y: activeResize.snapY, w: activeResize.snapW, h: activeResize.snapH } : null;
+
+  // Pointer event handlers for drag-and-drop
+  const handlePointerDownBlock = (e, block) => {
+    if (
+      e.target.closest('.bento-card-resize-handle') ||
+      e.target.closest('.delete-block-btn') ||
+      e.target.closest('.edit-block-btn') ||
+      e.target.closest('.btn-bento-follow-new') ||
+      e.target.closest('.btn-bento-sub-new') ||
+      e.target.tagName === 'INPUT' ||
+      e.target.tagName === 'BUTTON'
+    ) {
+      return;
+    }
+
+    const gap = gridSpacing ? 12 : 24;
+    const colWidth = (containerWidth + gap) / 4;
+    const rowHeight = 160 + gap;
+
+    setPotentialDrag({
+      block,
+      pointerId: e.pointerId,
+      cardEl: e.currentTarget,
+      startPointerX: e.clientX,
+      startPointerY: e.clientY,
+      startLeft: block.x * colWidth,
+      startTop: block.y * rowHeight
+    });
+  };
+
+  const handlePointerMoveBlock = (e, blockId) => {
+    if (potentialDrag && potentialDrag.block.id === blockId && !activeDrag) {
+      const dx = e.clientX - potentialDrag.startPointerX;
+      const dy = e.clientY - potentialDrag.startPointerY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance > 5) {
+        e.preventDefault();
+        try {
+          potentialDrag.cardEl.setPointerCapture(potentialDrag.pointerId);
+        } catch (err) {
+          console.warn("Failed to set pointer capture:", err);
+        }
+
+        setActiveDrag({
+          blockId: blockId,
+          startPointerX: potentialDrag.startPointerX,
+          startPointerY: potentialDrag.startPointerY,
+          startLeft: potentialDrag.startLeft,
+          startTop: potentialDrag.startTop,
+          currentLeft: potentialDrag.startLeft + dx,
+          currentTop: potentialDrag.startTop + dy,
+          snapX: potentialDrag.block.x,
+          snapY: potentialDrag.block.y,
+          w: potentialDrag.block.w,
+          h: potentialDrag.block.h
+        });
+      }
+      return;
+    }
+
+    if (activeDrag && activeDrag.blockId === blockId) {
+      e.preventDefault();
+      const dx = e.clientX - activeDrag.startPointerX;
+      const dy = e.clientY - activeDrag.startPointerY;
+
+      const gap = gridSpacing ? 12 : 24;
+      const colWidth = (containerWidth + gap) / 4;
+      const rowHeight = 160 + gap;
+
+      const currentLeft = activeDrag.startLeft + dx;
+      const currentTop = activeDrag.startTop + dy;
+
+      let snapX = Math.round(currentLeft / colWidth);
+      snapX = Math.max(0, Math.min(4 - activeDrag.w, snapX));
+      let snapY = Math.max(0, Math.round(currentTop / rowHeight));
+
+      setActiveDrag(prev => ({
+        ...prev,
+        currentLeft,
+        currentTop,
+        snapX,
+        snapY
+      }));
+
+      setGridBlocks((prevBlocks) => {
+        const movingBlock = prevBlocks.find(b => b.id === blockId);
+        if (!movingBlock) return prevBlocks;
+
+        const updated = prevBlocks.map(b => 
+          b.id === blockId ? { ...b, x: snapX, y: snapY } : b
+        );
+        return resolveLayout(updated, { ...movingBlock, x: snapX, y: snapY }, !freeGridMode);
+      });
+    }
+  };
+
+  const handlePointerUpBlock = (e, blockId) => {
+    setPotentialDrag(null);
+
+    if (activeDrag && activeDrag.blockId === blockId) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const cardEl = e.currentTarget;
+      try {
+        cardEl.releasePointerCapture(e.pointerId);
+      } catch (err) {
+        console.warn("Failed to release pointer capture:", err);
+      }
+
+      const finalSnapX = activeDrag.snapX;
+      const finalSnapY = activeDrag.snapY;
+
+      setGridBlocks((prevBlocks) => {
+        const movingBlock = prevBlocks.find(b => b.id === blockId);
+        if (!movingBlock) return prevBlocks;
+
+        const updated = prevBlocks.map(b => 
+          b.id === blockId ? { ...b, x: finalSnapX, y: finalSnapY } : b
+        );
+        return resolveLayout(updated, null, !freeGridMode);
+      });
+
+      setActiveDrag(null);
+    }
+  };
+
+  // Pointer event handlers for resize
+  const handlePointerDownResize = (e, block, direction) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const handleEl = e.currentTarget;
+    try {
+      handleEl.setPointerCapture(e.pointerId);
+    } catch (err) {
+      console.warn("Failed to set pointer capture:", err);
+    }
+
+    const gap = gridSpacing ? 12 : 24;
+    const colWidth = (containerWidth + gap) / 4;
+    const rowHeight = 160 + gap;
+
+    setActiveResize({
+      blockId: block.id,
+      direction,
+      startPointerX: e.clientX,
+      startPointerY: e.clientY,
+      startLeft: block.x * colWidth,
+      startTop: block.y * rowHeight,
+      startWidth: block.w * colWidth - gap,
+      startHeight: block.h * rowHeight - gap,
+      currentLeft: block.x * colWidth,
+      currentTop: block.y * rowHeight,
+      currentWidth: block.w * colWidth - gap,
+      currentHeight: block.h * rowHeight - gap,
+      snapX: block.x,
+      snapY: block.y,
+      snapW: block.w,
+      snapH: block.h
+    });
+  };
+
+  const handlePointerMoveResize = (e, blockId) => {
+    if (!activeResize || activeResize.blockId !== blockId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const dx = e.clientX - activeResize.startPointerX;
+    const dy = e.clientY - activeResize.startPointerY;
+
+    const gap = gridSpacing ? 12 : 24;
+    const colWidth = (containerWidth + gap) / 4;
+    const rowHeight = 160 + gap;
+
+    let currentLeft = activeResize.startLeft;
+    let currentTop = activeResize.startTop;
+    let currentWidth = activeResize.startWidth;
+    let currentHeight = activeResize.startHeight;
+
+    const block = gridBlocks.find(b => b.id === blockId);
+    if (!block) return;
+
+    const direction = activeResize.direction;
+
+    if (direction === 'right') {
+      currentWidth = Math.max(colWidth - gap, activeResize.startWidth + dx);
+    } else if (direction === 'left') {
+      currentLeft = Math.min(activeResize.startLeft + activeResize.startWidth - (colWidth - gap), activeResize.startLeft + dx);
+      currentWidth = activeResize.startWidth - (currentLeft - activeResize.startLeft);
+    } else if (direction === 'bottom') {
+      currentHeight = Math.max(rowHeight - gap, activeResize.startHeight + dy);
+    } else if (direction === 'top') {
+      currentTop = Math.min(activeResize.startTop + activeResize.startHeight - (rowHeight - gap), activeResize.startTop + dy);
+      currentHeight = activeResize.startHeight - (currentTop - activeResize.startTop);
+    }
+
+    let snapX = block.x;
+    let snapY = block.y;
+    let snapW = block.w;
+    let snapH = block.h;
+
+    if (direction === 'right') {
+      snapW = Math.round((currentWidth + gap) / colWidth);
+      snapW = Math.max(1, Math.min(4 - block.x, snapW));
+    } else if (direction === 'left') {
+      snapX = Math.round(currentLeft / colWidth);
+      snapX = Math.max(0, Math.min(block.x + block.w - 1, snapX));
+      snapW = block.x + block.w - snapX;
+    } else if (direction === 'bottom') {
+      snapH = Math.round((currentHeight + gap) / rowHeight);
+      snapH = Math.max(1, snapH);
+    } else if (direction === 'top') {
+      snapY = Math.round(currentTop / rowHeight);
+      snapY = Math.max(0, Math.min(block.y + block.h - 1, snapY));
+      snapH = block.y + block.h - snapY;
+    }
+
+    setActiveResize(prev => ({
+      ...prev,
+      currentLeft,
+      currentTop,
+      currentWidth,
+      currentHeight,
+      snapX,
+      snapY,
+      snapW,
+      snapH
+    }));
+
+    setGridBlocks((prevBlocks) => {
+      const movingBlock = prevBlocks.find(b => b.id === blockId);
+      if (!movingBlock) return prevBlocks;
+
+      const updated = prevBlocks.map(b => 
+        b.id === blockId ? { ...b, x: snapX, y: snapY, w: snapW, h: snapH } : b
+      );
+      return resolveLayout(updated, { ...movingBlock, x: snapX, y: snapY, w: snapW, h: snapH }, !freeGridMode);
+    });
+  };
+
+  const handlePointerUpResize = (e, blockId) => {
+    if (!activeResize || activeResize.blockId !== blockId) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const handleEl = e.currentTarget;
+    try {
+      handleEl.releasePointerCapture(e.pointerId);
+    } catch (err) {
+      console.warn("Failed to release pointer capture:", err);
+    }
+
+    const finalSnapX = activeResize.snapX;
+    const finalSnapY = activeResize.snapY;
+    const finalSnapW = activeResize.snapW;
+    const finalSnapH = activeResize.snapH;
+
+    setGridBlocks((prevBlocks) => {
+      const movingBlock = prevBlocks.find(b => b.id === blockId);
+      if (!movingBlock) return prevBlocks;
+
+      const updated = prevBlocks.map(b => 
+        b.id === blockId ? { ...b, x: finalSnapX, y: finalSnapY, w: finalSnapW, h: finalSnapH } : b
+      );
+      return resolveLayout(updated, null, !freeGridMode);
+    });
+
+    setActiveResize(null);
+  };
+
+  const renderResizeHandles = (block) => (
+    <>
+      <div
+        className={`bento-card-resize-handle right ${resizingBlockId === block.id ? 'resizing' : ''}`}
+        onPointerDown={(e) => handlePointerDownResize(e, block, 'right')}
+        onPointerMove={(e) => handlePointerMoveResize(e, block.id)}
+        onPointerUp={(e) => handlePointerUpResize(e, block.id)}
+        title="Drag Right to Resize"
+      />
+      <div
+        className={`bento-card-resize-handle left ${resizingBlockId === block.id ? 'resizing' : ''}`}
+        onPointerDown={(e) => handlePointerDownResize(e, block, 'left')}
+        onPointerMove={(e) => handlePointerMoveResize(e, block.id)}
+        onPointerUp={(e) => handlePointerUpResize(e, block.id)}
+        title="Drag Left to Resize"
+      />
+      <div
+        className={`bento-card-resize-handle bottom ${resizingBlockId === block.id ? 'resizing' : ''}`}
+        onPointerDown={(e) => handlePointerDownResize(e, block, 'bottom')}
+        onPointerMove={(e) => handlePointerMoveResize(e, block.id)}
+        onPointerUp={(e) => handlePointerUpResize(e, block.id)}
+        title="Drag Bottom to Resize"
+      />
+      <div
+        className={`bento-card-resize-handle top ${resizingBlockId === block.id ? 'resizing' : ''}`}
+        onPointerDown={(e) => handlePointerDownResize(e, block, 'top')}
+        onPointerMove={(e) => handlePointerMoveResize(e, block.id)}
+        onPointerUp={(e) => handlePointerUpResize(e, block.id)}
+        title="Drag Top to Resize"
+      />
+    </>
+  );
 
   useEffect(() => {
     if (shouldFocusLast && lastItemRef.current) {
@@ -130,34 +609,6 @@ export default function BentoView() {
     closeDialog()
   }
 
-  const handleDragStartBlock = (e, blockId) => {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.tagName === 'A' || e.target.closest('.edit-block-btn') || e.target.closest('.delete-block-btn')) {
-      e.preventDefault();
-      return;
-    }
-    setDraggedBlockId(blockId);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOverBlock = (e) => {
-    e.preventDefault();
-  };
-
-  const handleDropBlock = (e, targetId) => {
-    e.preventDefault();
-    if (!draggedBlockId || draggedBlockId === targetId) return;
-
-    const sourceIdx = gridBlocks.findIndex(b => b.id === draggedBlockId);
-    const targetIdx = gridBlocks.findIndex(b => b.id === targetId);
-    if (sourceIdx === -1 || targetIdx === -1) return;
-
-    const updated = [...gridBlocks];
-    const [draggedBlock] = updated.splice(sourceIdx, 1);
-    updated.splice(targetIdx, 0, draggedBlock);
-    setGridBlocks(updated);
-    setDraggedBlockId(null);
-  };
-
   const handleDragStartItem = (e, index) => {
     setDraggedItemIndex(index);
     e.dataTransfer.effectAllowed = 'move';
@@ -180,8 +631,8 @@ export default function BentoView() {
     const reader = new FileReader()
     reader.onload = (ev) => {
       const blockId = `custom-block-${Date.now()}`
-      const newBlock = { id: blockId, type: 'image', url: ev.target.result }
-      setGridBlocks([...gridBlocks, newBlock])
+      const newBlock = { id: blockId, type: 'image', url: ev.target.result, w: 1, h: 1 }
+      setGridBlocks((prevBlocks) => placeBlocks([...prevBlocks, newBlock], !freeGridMode))
       toast('Custom image block added!')
     }
     reader.readAsDataURL(file)
@@ -205,7 +656,7 @@ export default function BentoView() {
     if (editingBlockId) {
       setGridBlocks(gridBlocks.map(block => {
         if (block.id === editingBlockId) {
-          let updatedBlock = { ...block, size: dialogSize }
+          let updatedBlock = { ...block }
           if (block.type === 'custom-emoji') {
             updatedBlock.emoji = dialogInput1
           } else if (block.type === 'custom-text') {
@@ -232,19 +683,19 @@ export default function BentoView() {
     const blockId = `custom-block-${Date.now()}`;
 
     if (activeDialog === 'emoji') {
-      newBlock = { id: blockId, type: 'custom-emoji', emoji: dialogInput1, size: dialogSize };
+      newBlock = { id: blockId, type: 'custom-emoji', emoji: dialogInput1, w: 1, h: 1 };
     } else if (activeDialog === 'text') {
-      newBlock = { id: blockId, type: 'custom-text', text: dialogInput1, size: dialogSize };
+      newBlock = { id: blockId, type: 'custom-text', text: dialogInput1, w: 2, h: 1 };
     } else if (activeDialog === 'link') {
-      const url = dialogInput2.trim() || 'https://hiprofile.bio';
-      newBlock = { id: blockId, type: 'custom-link', title: dialogInput1, url: url, size: dialogSize };
+      const url = dialogInput2.trim() || 'https://example.com';
+      newBlock = { id: blockId, type: 'custom-link', title: dialogInput1, url: url, w: 2, h: 1 };
     } else if (activeDialog === 'checklist') {
       const filtered = listItems.map(i => i.trim()).filter(Boolean);
-      newBlock = { id: blockId, type: 'custom-checklist', title: listTitle.trim() || 'My List', items: filtered, size: dialogSize };
+      newBlock = { id: blockId, type: 'custom-checklist', title: listTitle.trim() || 'My List', items: filtered, w: 2, h: 1 };
     }
 
     if (newBlock) {
-      setGridBlocks([...gridBlocks, newBlock])
+      setGridBlocks((prevBlocks) => placeBlocks([...prevBlocks, newBlock], !freeGridMode))
       toast('New block added to grid!')
     }
     closeDialog()
@@ -260,8 +711,8 @@ export default function BentoView() {
     ];
     const imgUrl = images[gridBlocks.filter(b => b.type === 'image').length % images.length];
     const blockId = `custom-block-${Date.now()}`;
-    const newBlock = { id: blockId, type: 'image', url: imgUrl };
-    setGridBlocks([...gridBlocks, newBlock])
+    const newBlock = { id: blockId, type: 'image', url: imgUrl, w: 1, h: 1 };
+    setGridBlocks((prevBlocks) => placeBlocks([...prevBlocks, newBlock], !freeGridMode))
     toast('Project Image card added!')
   }
 
@@ -274,8 +725,8 @@ export default function BentoView() {
       "💡 Creativity is intelligence having fun."
     ];
     const quote = AIQuotes[Math.floor(Math.random() * AIQuotes.length)];
-    const newBlock = { id: blockId, type: 'custom-text', text: quote };
-    setGridBlocks([...gridBlocks, newBlock])
+    const newBlock = { id: blockId, type: 'custom-text', text: quote, w: 2, h: 1 };
+    setGridBlocks((prevBlocks) => placeBlocks([...prevBlocks, newBlock], !freeGridMode))
     toast('AI Quote block generated!')
   }
 
@@ -283,6 +734,15 @@ export default function BentoView() {
     setGridSpacing(!gridSpacing)
     toast(gridSpacing ? 'Grid spacing set to Normal' : 'Grid spacing set to Compact')
   }
+
+  const handleToggleLayoutMode = () => {
+    const newMode = !freeGridMode;
+    setFreeGridMode(newMode);
+    toast(newMode ? 'Free Grid layout enabled!' : 'Auto-Compact layout enabled!');
+    if (!newMode) {
+      setGridBlocks((prevBlocks) => resolveLayout(prevBlocks, null, true));
+    }
+  };
 
   // Copy Profile Link
   const handleCopyLink = () => {
@@ -297,6 +757,46 @@ export default function BentoView() {
     setIsDark(nextTheme === 'dark')
     toast(`Switched to ${nextTheme} theme!`)
   }
+
+  // Pre-calculate card grid parameters for absolute rendering
+  const activePreviewRow = (dragPreview || resizePreview) ? (dragPreview || resizePreview).y + (dragPreview || resizePreview).h : 0;
+  const maxPopulatedRow = Math.max(0, activePreviewRow, ...gridBlocks.map(b => (b.y || 0) + (b.h || 1)));
+  const gap = gridSpacing ? 12 : 24;
+  const colWidth = (containerWidth + gap) / 4;
+  const rowHeight = 160 + gap;
+  const gridHeight = maxPopulatedRow * rowHeight - gap;
+  const totalContainerHeight = Math.max(0, gridHeight) + 16 + 90 + 24; // accommodates the "+" button at the bottom
+
+  const getCardStyle = (block) => {
+    const isDragging = activeDrag && activeDrag.blockId === block.id;
+    const isResizing = activeResize && activeResize.blockId === block.id;
+
+    let left = block.x * colWidth;
+    let top = block.y * rowHeight;
+    let width = block.w * colWidth - gap;
+    let height = block.h * rowHeight - gap;
+
+    if (isDragging) {
+      left = activeDrag.currentLeft;
+      top = activeDrag.currentTop;
+    } else if (isResizing) {
+      left = activeResize.currentLeft;
+      top = activeResize.currentTop;
+      width = activeResize.currentWidth;
+      height = activeResize.currentHeight;
+    }
+
+    return {
+      position: 'absolute',
+      left: `${left}px`,
+      top: `${top}px`,
+      width: `${width}px`,
+      height: `${height}px`,
+      touchAction: 'none',
+      opacity: draggedBlockId === block.id ? 0.35 : 1,
+      cursor: isDragging ? 'grabbing' : 'grab'
+    };
+  };
 
   return (
     <div className={`bento-profile-wrapper ${isDark ? 'dark-mode-active' : ''}`} style={{ fontFamily: profileCardFont || 'var(--font-body)', minHeight: '100vh', paddingBottom: '120px', transition: 'background-color 0.3s' }}>
@@ -320,392 +820,334 @@ export default function BentoView() {
         </div>
       </header>
 
-      {/* Viewport Frame wrapper for Mobile simulator */}
-      <div className={isMobile ? 'mobile-simulator-frame' : ''}>
-        {isMobile && <div className="mobile-notch" />}
+      {/* Main Center content */}
+      <div className="bento-content-container">
 
-        {/* Main Center content */}
-        <div className="bento-content-container">
-          
-          {/* A. Peach Top Banner Card */}
-          <section className="bento-banner-card-new">
-            <div className="bento-banner-left">
-              <div className="bento-banner-intro">Hello! I am</div>
-              <h1 className="bento-banner-heading">
-                <span className="accent-purple">{name}</span><br />
-                <span className="text-dark">&amp; Creator</span>
-              </h1>
-            </div>
-            <div className="bento-banner-right-placeholder" style={{ padding: 0, overflow: 'hidden' }}>
-              <img src="/assets/images/designer_banner.png" alt="Designer Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-          </section>
 
-          {/* B. Overlapping White Profile Card */}
-          <section className="bento-profile-details-card">
-            <div className="bento-avatar-overlap">
-              <AvatarDisplay avatar={avatar} />
-            </div>
-            <h2 className="bento-details-name">{name}</h2>
-            <p className="bento-details-bio">{bio}</p>
-            
-            {/* Social Icons row */}
-            <div className="bento-placeholder-socials" style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 16 }}>
-              {Object.keys(socialLinks || {}).map(key => {
-                const usernameVal = socialLinks[key];
-                if (!usernameVal) return null;
-                
-                let link = '#';
-                if (key === 'twitter') link = `https://twitter.com/${usernameVal}`;
-                else if (key === 'instagram') link = `https://instagram.com/${usernameVal}`;
-                else if (key === 'linkedin') link = `https://linkedin.com/in/${usernameVal}`;
-                else if (key === 'github') link = `https://github.com/${usernameVal}`;
-                else if (key === 'youtube') link = `https://youtube.com/@${usernameVal}`;
-                
-                const brandColor = getSocialBrandColor(key);
-                return (
-                  <a key={key} href={link} target="_blank" rel="noopener noreferrer" 
-                     className="db-preview-social-circle" 
-                     style={{ 
-                       width: 40, 
-                       height: 40, 
-                       background: isDark ? '#1E293B' : '#F3F4F6', 
-                       color: isDark ? '#94A3B8' : '#4B5563',
-                       borderRadius: '50%', 
-                       display: 'flex', 
-                       alignItems: 'center', 
-                       justifyContent: 'center', 
-                       textDecoration: 'none', 
-                       transition: 'all 0.2s',
-                       border: `1.5px solid ${isDark ? '#334155' : '#E5E7EB'}`
-                     }}
-                     onMouseEnter={(e) => {
-                       e.currentTarget.style.color = '#FFFFFF';
-                       e.currentTarget.style.background = brandColor;
-                       e.currentTarget.style.borderColor = brandColor;
-                       e.currentTarget.style.transform = 'translateY(-2px)';
-                     }}
-                     onMouseLeave={(e) => {
-                       e.currentTarget.style.color = isDark ? '#94A3B8' : '#4B5563';
-                       e.currentTarget.style.background = isDark ? '#1E293B' : '#F3F4F6';
-                       e.currentTarget.style.borderColor = isDark ? '#334155' : '#E5E7EB';
-                       e.currentTarget.style.transform = 'translateY(0)';
-                     }}
-                     title={`${key}: @${usernameVal}`}>
-                    {getSocialIcon(key, 20, 'currentColor')}
-                  </a>
-                );
-              })}
-              {Object.keys(socialLinks || {}).filter(k => socialLinks[k]).length === 0 && (
-                <p style={{ color: '#888', fontSize: '0.85rem' }}>No social handles linked yet</p>
-              )}
-            </div>
-          </section>
+        {/* B. Overlapping White Profile Card */}
+        <section className="bento-profile-details-card">
+          <div className="bento-avatar-overlap">
+            <AvatarDisplay avatar={avatar} />
+          </div>
+          <h2 className="bento-details-name">{name}</h2>
+          <p className="bento-details-bio">{bio}</p>
 
-          {/* C. Bento Cards Grid */}
-          <section className="bento-grid-layout-new" style={{ gap: gridSpacing ? '12px' : '24px' }}>
-            {gridBlocks.map(block => {
-              if (block.type === 'location') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-loc-card-new"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab',
-                      position: 'relative'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <div className="bento-loc-dot-new" />
-                    <div className="bento-loc-text-new">{block.content}</div>
+        </section>
+
+        {/* C. Bento Cards Grid */}
+        <section 
+          ref={containerRef}
+          className="bento-grid-layout-new" 
+          style={{ 
+            height: `${totalContainerHeight}px`,
+            '--bento-gap': `${gap}px`
+          }}
+        >
+          {/* Snapping Grid Cell Placeholders Background */}
+          <div className="bento-grid-background">
+            {Array.from({ length: Math.max(0, maxPopulatedRow) * 4 }).map((_, i) => (
+              <div key={i} className="bento-grid-cell-placeholder" />
+            ))}
+          </div>
+
+          {/* Snap drag/resize preview outline */}
+          {(dragPreview || (resizePreview && resizePreview.id === resizingBlockId)) && (
+            <div
+              className="bento-grid-preview-placeholder"
+              style={{
+                left: `${(dragPreview || resizePreview).x * colWidth}px`,
+                top: `${(dragPreview || resizePreview).y * rowHeight}px`,
+                width: `${(dragPreview || resizePreview).w * colWidth - gap}px`,
+                height: `${(dragPreview || resizePreview).h * rowHeight - gap}px`
+              }}
+            >
+              <div className="bento-grid-preview-inner">
+                {(dragPreview || resizePreview).w} × {(dragPreview || resizePreview).h}
+              </div>
+            </div>
+          )}
+
+          {gridBlocks.map(block => {
+            const isDraggingThis = draggedBlockId === block.id;
+            const isResizingThis = resizingBlockId === block.id;
+            const blockStyle = getCardStyle(block);
+
+            if (block.type === 'location') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-loc-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <div className="bento-loc-dot-new" />
+                  <div className="bento-loc-text-new">{block.content}</div>
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'github') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-git-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <div className="bento-git-left-new">
+                    <div className="bento-git-icon-new">
+                      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+                      </svg>
+                    </div>
+                    <div className="bento-git-details-new">
+                      <div className="bento-git-title-new">{block.username}</div>
+                      <div className="bento-git-sub-new">github.com</div>
+                    </div>
                   </div>
-                )
-              }
-              if (block.type === 'github') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-git-card-new"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab',
-                      position: 'relative'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <div className="bento-git-left-new">
-                      <div className="bento-git-icon-new">
-                        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                          <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
-                        </svg>
+                  <div className="bento-git-divider-new" />
+                  <div className="bento-git-right-new" style={{ padding: 0, overflow: 'hidden' }}>
+                    <img src="/assets/images/github_preview.png" alt="GitHub contributions" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'image') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-img-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={{
+                    ...blockStyle,
+                    padding: 0
+                  }}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <img src={block.url || '/assets/images/featured_brand_mockup.png'} alt="Project Portfolio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'behance') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-beh-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <div className="bento-beh-header-new">
+                    <div className="bento-beh-brand-new">
+                      <div className="bento-beh-icon-new">Bē</div>
+                      <div className="bento-beh-text-new">
+                        <div className="bento-beh-title-new">{block.title}</div>
+                        <div className="bento-beh-sub-new">behance.net</div>
                       </div>
-                      <div className="bento-git-details-new">
-                        <div className="bento-git-title-new">{block.username}</div>
-                        <div className="bento-git-sub-new">github.com</div>
+                    </div>
+                    <button
+                      className={`btn-bento-follow-new ${followed ? 'following' : ''}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFollowed(!followed)
+                        toast(followed ? 'Unfollowed on Behance' : 'Following on Behance!')
+                      }}
+                    >
+                      {followed ? '✓ Following' : '＋ Follow 158'}
+                    </button>
+                  </div>
+                  <div className="bento-beh-bottom-card" style={{ background: '#111625', borderRadius: '16px' }}>
+                    MEDSwift UI/UX Case Study
+                  </div>
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'youtube') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-yt-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <div className="bento-yt-left-new">
+                    <div className="bento-yt-brand-new">
+                      <div className="bento-yt-icon-new">▶</div>
+                      <div className="bento-yt-text-new">
+                        <div className="bento-yt-title-new">{block.title}</div>
+                        <div className="bento-yt-sub-new">youtube.com</div>
                       </div>
                     </div>
-                    <div className="bento-git-divider-new" />
-                    <div className="bento-git-right-new" style={{ padding: 0, overflow: 'hidden' }}>
-                      <img src="/assets/images/github_preview.png" alt="GitHub contributions" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
+                    <button
+                      className={`btn-bento-sub-new ${subscribed ? 'subscribed' : ''}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setSubscribed(!subscribed)
+                        toast(subscribed ? 'Unsubscribed on YouTube' : 'Subscribe 694')
+                      }}
+                    >
+                      {subscribed ? '✓ Subscribed' : 'Subscribe 694'}
+                    </button>
                   </div>
-                )
-              }
-              if (block.type === 'image') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-img-card-new"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      padding: 0,
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab',
-                      position: 'relative'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <img src={block.url || '/assets/images/featured_brand_mockup.png'} alt="Project Portfolio" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div className="bento-yt-right-new">
+                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/fintech_dashboard.png) center/cover' }} />
+                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/ecommerce_app.png) center/cover' }} />
+                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/design_system.png) center/cover' }} />
+                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/ar_glass.png) center/cover' }} />
                   </div>
-                )
-              }
-              if (block.type === 'behance') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-beh-card-new"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab',
-                      position: 'relative'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <div className="bento-beh-header-new">
-                      <div className="bento-beh-brand-new">
-                        <div className="bento-beh-icon-new">Bē</div>
-                        <div className="bento-beh-text-new">
-                          <div className="bento-beh-title-new">{block.title}</div>
-                          <div className="bento-beh-sub-new">behance.net</div>
-                        </div>
-                      </div>
-                      <button
-                        className={`btn-bento-follow-new ${followed ? 'following' : ''}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setFollowed(!followed)
-                          toast(followed ? 'Unfollowed on Behance' : 'Following on Behance!')
-                        }}
-                      >
-                        {followed ? '✓ Following' : '＋ Follow 158'}
-                      </button>
-                    </div>
-                    <div className="bento-beh-bottom-card" style={{ background: '#111625', borderRadius: '16px' }}>
-                      MEDSwift UI/UX Case Study
-                    </div>
-                  </div>
-                )
-              }
-              if (block.type === 'youtube') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-yt-card-new"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab',
-                      position: 'relative'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <div className="bento-yt-left-new">
-                      <div className="bento-yt-brand-new">
-                        <div className="bento-yt-icon-new">▶</div>
-                        <div className="bento-yt-text-new">
-                          <div className="bento-yt-title-new">{block.title}</div>
-                          <div className="bento-yt-sub-new">youtube.com</div>
-                        </div>
-                      </div>
-                      <button
-                        className={`btn-bento-sub-new ${subscribed ? 'subscribed' : ''}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setSubscribed(!subscribed)
-                          toast(subscribed ? 'Unsubscribed on YouTube' : 'Subscribe 694')
-                        }}
-                      >
-                        {subscribed ? '✓ Subscribed' : 'Subscribe 694'}
-                      </button>
-                    </div>
-                    <div className="bento-yt-right-new">
-                      <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/fintech_dashboard.png) center/cover' }} />
-                      <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/ecommerce_app.png) center/cover' }} />
-                      <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/design_system.png) center/cover' }} />
-                      <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/ar_glass.png) center/cover' }} />
-                    </div>
-                  </div>
-                )
-              }
-              if (block.type === 'custom-emoji') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-block-emoji"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      gridColumn: block.size === 'small' ? 'span 3' : block.size === 'large' ? 'span 12' : 'span 6',
-                      position: 'relative',
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
-                    {block.emoji}
-                  </div>
-                )
-              }
-              if (block.type === 'custom-text') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-block-text"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      gridColumn: block.size === 'small' ? 'span 3' : block.size === 'large' ? 'span 12' : 'span 6',
-                      position: 'relative',
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
-                    {block.text}
-                  </div>
-                )
-              }
-              if (block.type === 'custom-link') {
-                const brandColor = getSocialBrandColor(block.url);
-                return (
-                  <a
-                    key={block.id}
-                    href={block.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bento-card-base bento-block-link"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      gridColumn: block.size === 'small' ? 'span 3' : block.size === 'large' ? 'span 12' : 'span 6',
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'custom-emoji') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-block-emoji ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
+                  {block.emoji}
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'custom-text') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-block-text ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
+                  {block.text}
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            if (block.type === 'custom-link') {
+              const brandColor = getSocialBrandColor(block.url);
+              return (
+                <a
+                  key={block.id}
+                  href={block.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`bento-card-base bento-block-link ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={{
+                    ...blockStyle,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    padding: '20px',
+                    minHeight: '140px',
+                    textDecoration: 'none'
+                  }}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      background: `${brandColor}15`,
+                      color: brandColor,
                       display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      padding: '20px',
-                      minHeight: '140px',
-                      position: 'relative',
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        background: `${brandColor}15`,
-                        color: brandColor,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '1.25rem',
-                        flexShrink: 0
-                      }}>
-                        {getSocialIcon(block.url, 20, brandColor)}
-                      </div>
-                      <span style={{ fontSize: '1.1rem', color: isDark ? '#94A3B8' : '#9CA3AF' }}>↗</span>
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      flexShrink: 0
+                    }}>
+                      {getSocialIcon(block.url, 20, brandColor)}
                     </div>
-                    <div style={{ marginTop: 'auto', paddingTop: '10px' }}>
-                      <div className="bento-block-link-title" style={{ fontSize: '1.05rem', fontWeight: 800 }}>{block.title}</div>
-                      <div className="bento-block-link-url" style={{ marginTop: 4, fontSize: '0.8rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {block.url.replace(/^https?:\/\/(www\.)?/, '')}
-                      </div>
-                    </div>
-                  </a>
-                )
-              }
-              if (block.type === 'custom-checklist') {
-                return (
-                  <div
-                    key={block.id}
-                    className="bento-card-base bento-block-checklist"
-                    draggable={true}
-                    onDragStart={(e) => handleDragStartBlock(e, block.id)}
-                    onDragOver={handleDragOverBlock}
-                    onDrop={(e) => handleDropBlock(e, block.id)}
-                    style={{
-                      gridColumn: block.size === 'small' ? 'span 3' : block.size === 'large' ? 'span 12' : 'span 6',
-                      position: 'relative',
-                      opacity: draggedBlockId === block.id ? 0.4 : 1,
-                      cursor: 'grab'
-                    }}
-                  >
-                    <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                    <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
-                    <h4 className="checklist-title">{block.title}</h4>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                      {block.items.map((item, idx) => (
-                        <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.95rem', color: isDark ? '#94A3B8' : '#4B5563', marginBottom: '8px', lineHeight: '1.4' }}>
-                          <span style={{ color: '#3E66FB', fontWeight: 'bold' }}>•</span>
-                          <span>{item}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    <span style={{ fontSize: '1.1rem', color: isDark ? '#94A3B8' : '#9CA3AF' }}>↗</span>
                   </div>
-                )
-              }
-              return null
-            })}
+                  <div style={{ marginTop: 'auto', paddingTop: '10px' }}>
+                    <div className="bento-block-link-title" style={{ fontSize: '1.05rem', fontWeight: 800 }}>{block.title}</div>
+                    <div className="bento-block-link-url" style={{ marginTop: 4, fontSize: '0.8rem', color: '#6B7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {block.url.replace(/^https?:\/\/(www\.)?/, '')}
+                    </div>
+                  </div>
+                  {renderResizeHandles(block)}
+                </a>
+              )
+            }
+            if (block.type === 'custom-checklist') {
+              return (
+                <div
+                  key={block.id}
+                  className={`bento-card-base bento-block-checklist ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
+                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
+                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
+                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
+                  style={blockStyle}
+                >
+                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+                  <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
+                  <h4 className="checklist-title">{block.title}</h4>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {block.items.map((item, idx) => (
+                      <li key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '0.95rem', color: isDark ? '#94A3B8' : '#4B5563', marginBottom: '8px', lineHeight: '1.4' }}>
+                        <span style={{ color: '#3E66FB', fontWeight: 'bold' }}>•</span>
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {renderResizeHandles(block)}
+                </div>
+              )
+            }
+            return null
+          })}
 
-            {/* Dotted "+" Card */}
-            <div className="bento-add-block-btn" onClick={() => openDialog('select-tool')} style={{ cursor: 'pointer' }}>
-              <span style={{ fontSize: '1.8rem' }}>＋</span>
-              <span>Click here to add a block</span>
-            </div>
-          </section>
+          {/* Dotted "+" Card */}
+          <div 
+            className="bento-add-block-btn" 
+            onClick={() => openDialog('select-tool')} 
+            style={{ 
+              cursor: 'pointer',
+              position: 'absolute',
+              left: 0,
+              top: `${gridHeight + 16}px`,
+              width: '100%',
+              boxSizing: 'border-box'
+            }}
+          >
+            <span style={{ fontSize: '1.8rem' }}>＋</span>
+            <span>Click here to add a block</span>
+          </div>
+        </section>
 
-        </div>
       </div>
 
       {/* 4. Bottom Toolbar palette */}
@@ -724,17 +1166,6 @@ export default function BentoView() {
             🧭
           </button>
         </div>
-
-        <div className="bento-tool-palette">
-          <button className="btn-tool-item" onClick={() => openDialog('emoji')} title="Add Emoji Block">😊</button>
-          <button className="btn-tool-item" onClick={() => openDialog('link')} title="Add Link Block">🔗</button>
-          <button className="btn-tool-item" onClick={() => openDialog('text')} title="Add Text Block">Ｔ</button>
-          <button className="btn-tool-item" onClick={() => openDialog('checklist')} title="Add List Block">📋</button>
-          <button className="btn-tool-item" onClick={() => imageInputRef.current?.click()} title="Upload Image Card">🖼️</button>
-          <button className="btn-tool-item" onClick={handleToggleGridSpacing} title="Toggle Spacing">田</button>
-          <button className="btn-tool-item" onClick={() => setIsMobile(!isMobile)} title="Toggle Mobile Preview">📱</button>
-          <button className="btn-tool-item" onClick={handleAddAIBlock} title="Add AI Quote Block">✨</button>
-        </div>
       </div>
 
       {/* Custom dialog modal overlay */}
@@ -748,7 +1179,7 @@ export default function BentoView() {
               {activeDialog === 'text' && (editingBlockId ? 'Edit Text Block' : 'Add Text Block')}
               {activeDialog === 'checklist' && (editingBlockId ? 'Edit List Block' : 'Add List Block')}
             </h3>
-            
+
             {activeDialog === 'select-tool' && (
               <div className="bento-tool-select-grid">
                 <button className="tool-select-item" onClick={() => openDialog('emoji')} title="Add Emoji Block">
@@ -793,13 +1224,15 @@ export default function BentoView() {
                     <span className="tool-select-desc">Toggle layout gaps</span>
                   </div>
                 </button>
-                <button className="tool-select-item" onClick={() => { setIsMobile(!isMobile); closeDialog(); }} title="Toggle Mobile Preview">
-                  <span className="tool-select-icon">📱</span>
+
+                <button className="tool-select-item" onClick={() => { handleToggleLayoutMode(); closeDialog(); }} title="Toggle Layout Mode">
+                  <span className="tool-select-icon">{freeGridMode ? '🎨' : '🧲'}</span>
                   <div className="tool-select-details">
-                    <span className="tool-select-name">Mobile Preview</span>
-                    <span className="tool-select-desc">Toggle simulator mockup</span>
+                    <span className="tool-select-name">Layout: {freeGridMode ? 'Free Grid' : 'Auto-Compact'}</span>
+                    <span className="tool-select-desc">{freeGridMode ? 'Switch to snapping gravity' : 'Switch to placing anywhere'}</span>
                   </div>
                 </button>
+
                 <button className="tool-select-item" onClick={() => { handleAddAIBlock(); closeDialog(); }} title="Add AI Block">
                   <span className="tool-select-icon">✨</span>
                   <div className="tool-select-details">
@@ -937,36 +1370,7 @@ export default function BentoView() {
               </>
             )}
 
-            {activeDialog !== 'select-tool' && (
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 'bold', color: isDark ? '#94A3B8' : '#4B5563', marginBottom: '8px' }}>Block Size</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  {['small', 'medium', 'large'].map((sz) => (
-                    <button
-                      key={sz}
-                      type="button"
-                      onClick={() => setDialogSize(sz)}
-                      style={{
-                        flex: 1,
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        border: '1.5px solid',
-                        borderColor: dialogSize === sz ? '#3E66FB' : (isDark ? '#475569' : '#E2E8F0'),
-                        background: dialogSize === sz ? '#3E66FB' : (isDark ? '#334155' : '#FFFFFF'),
-                        color: dialogSize === sz ? '#FFFFFF' : (isDark ? '#CBD5E1' : '#4B5563'),
-                        fontWeight: '700',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        textTransform: 'capitalize'
-                      }}
-                    >
-                      {sz}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Block Size selector has been removed in favor of drag-to-resize handles */}
 
             <div className="bento-dialog-actions" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '12px' }}>
               {editingBlockId ? (
