@@ -1,5 +1,5 @@
 const nodeMailer = require('nodemailer');
-require('dotenv').config();
+// dotenv is loaded once in server.js before all imports — no need to load again
 const transporter = nodeMailer.createTransport({
     host: process.env.MAIL_SERVER,
     port: process.env.MAIL_PORT,

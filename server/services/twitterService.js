@@ -1,42 +1,119 @@
-const getTwitterProfile = async (username) => {
-    const bearerToken = process.env.TWITTER_BEARER_TOKEN;
+const { ApifyClient } = require('apify-client');
+
+const normalizeTwitterUsername = (input) => {
+    let username = input.trim();
+    if (!username) return '';
     
-    // If bearer token is provided, we can fetch
-    if (bearerToken) {
+    // Parse URL if it starts with http/https
+    if (username.startsWith('http://') || username.startsWith('https://')) {
         try {
-            const res = await fetch(`https://api.twitter.com/2/users/by/username/${username}?user.fields=profile_image_url,description,public_metrics`, {
-                headers: {
-                    'Authorization': `Bearer ${bearerToken}`
-                }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                if (data.data) {
-                    const user = data.data;
-                    return {
-                        success: true,
-                        username: user.username,
-                        displayName: user.name,
-                        bio: user.description || '',
-                        profilePicture: user.profile_image_url || '',
-                        followersCount: user.public_metrics?.followers_count || 0,
-                        followingCount: user.public_metrics?.following_count || 0,
-                        postCount: user.public_metrics?.tweet_count || 0,
-                        recentPosts: []
-                    };
-                }
+            const url = new URL(username);
+            const pathParts = url.pathname.split('/').filter(Boolean);
+            if (pathParts.length > 0) {
+                username = pathParts[0];
             }
         } catch (e) {
-            console.error('Twitter API error:', e.message);
+            const parts = username.split('/');
+            username = parts[parts.length - 1] || username;
+        }
+    } else {
+        if (username.includes('twitter.com/') || username.includes('x.com/')) {
+            const parts = username.split('/');
+            username = parts[parts.length - 1] || username;
         }
     }
     
-    // Fallback: indicate API is unavailable, but return username and profile url so the frontend can still display the handle and link
+    // Remove leading @ if present
+    if (username.startsWith('@')) {
+        username = username.slice(1);
+    }
+    
+    // Strip query parameters
+    username = username.split('?')[0].split('#')[0].trim();
+    
+    return username;
+};
+
+const getTwitterProfile = async (rawUsername) => {
+    const username = normalizeTwitterUsername(rawUsername);
+    if (!username) {
+        throw new Error('Twitter/X username identifier is required');
+    }
+
+    const client = new ApifyClient({
+        token: process.env.APIFY_API_KEY,
+    });
+
+    console.log(`[Apify Twitter Scraper] Starting runs for: "${username}"`);
+
+    // Call Apify actor automation-lab/twitter-scraper for profiles and user-tweets in parallel
+    const [profilesRun, tweetsRun] = await Promise.all([
+        client.actor("automation-lab/twitter-scraper").call({
+            mode: "profiles",
+            usernames: [username]
+        }),
+        client.actor("automation-lab/twitter-scraper").call({
+            mode: "user-tweets",
+            usernames: [username],
+            maxResults: 3
+        })
+    ]);
+
+    console.log(`[Apify Twitter Scraper] Runs inited. Profiles Run ID: "${profilesRun.id}", Tweets Run ID: "${tweetsRun.id}"`);
+
+    const [ { items: profileItems }, { items: tweetItems } ] = await Promise.all([
+        client.dataset(profilesRun.defaultDatasetId).listItems(),
+        client.dataset(tweetsRun.defaultDatasetId).listItems()
+    ]);
+
+    console.log(`[Apify Twitter Scraper] Datasets loaded. Profiles found: ${profileItems.length}, Tweets found: ${tweetItems.length}`);
+
+    if (!profileItems || profileItems.length === 0) {
+        throw new Error('Twitter/X account not found or public access restricted');
+    }
+
+    const profileObj = profileItems[0];
+    if (profileObj.error || profileObj.ok === false) {
+        throw new Error(profileObj.error || 'Failed to retrieve Twitter/X profile data');
+    }
+
+    const displayName = profileObj.name || profileObj.username || username;
+    const profilePicture = profileObj.profilePicture || '';
+    const bio = profileObj.bio || '';
+    const followersCount = profileObj.followers || 0;
+    const followingCount = profileObj.following || 0;
+    const postCount = profileObj.tweetsCount || 0;
+
+    // Filter and map the latest 3 tweets
+    const tweets = (tweetItems || [])
+        .slice(0, 3)
+        .map(tweet => {
+            let mediaUrl = '';
+            if (Array.isArray(tweet.mediaUrls) && tweet.mediaUrls.length > 0) {
+                mediaUrl = tweet.mediaUrls[0];
+            }
+            return {
+                id: tweet.id,
+                text: tweet.text || '',
+                imageUrl: mediaUrl,
+                likesCount: tweet.likeCount || 0,
+                repliesCount: tweet.replyCount || 0,
+                retweetsCount: tweet.retweetCount || 0,
+                postUrl: tweet.url || `https://x.com/${username}/status/${tweet.id}`,
+                createdAt: tweet.createdAt || ''
+            };
+        });
+
     return {
-        success: false,
-        errorType: 'UNAVAILABLE',
+        success: true,
         username: username,
-        profileUrl: `https://x.com/${username}`
+        displayName: displayName,
+        bio: bio,
+        profilePicture: profilePicture,
+        followersCount: followersCount,
+        followingCount: followingCount,
+        postCount: postCount,
+        recentPosts: tweets
     };
 };
 

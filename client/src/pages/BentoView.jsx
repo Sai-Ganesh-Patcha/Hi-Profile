@@ -572,13 +572,19 @@ export default function BentoView() {
   const openDialog = (type) => {
     if (type === 'instagram') {
       setDialogInput1(socialLinks?.instagram || '')
+    } else if (type === 'github') {
+      setDialogInput1(socialLinks?.github || '')
+    } else if (type === 'youtube') {
+      setDialogInput1(socialLinks?.youtube || '')
+    } else if (type === 'twitter') {
+      setDialogInput1(socialLinks?.twitter || '')
     } else {
       setDialogInput1('')
     }
     setDialogInput2('')
     setListTitle('My List')
     setListItems(['', '', ''])
-    setDialogSize(type === 'emoji' || type === 'link' || type === 'instagram' ? 'small' : 'medium')
+    setDialogSize(type === 'emoji' || type === 'link' || type === 'instagram' || type === 'github' || type === 'youtube' || type === 'twitter' ? 'small' : 'medium')
     setActiveDialog(type)
   }
 
@@ -589,7 +595,7 @@ export default function BentoView() {
 
   const handleEditBlock = (block) => {
     setEditingBlockId(block.id)
-    setDialogSize(block.size || (block.type === 'custom-emoji' || block.type === 'custom-link' || block.type === 'instagram' ? 'small' : 'medium'))
+    setDialogSize(block.size || (block.type === 'custom-emoji' || block.type === 'custom-link' || block.type === 'instagram' || block.type === 'github' || block.type === 'youtube' || block.type === 'twitter' || block.type === 'linkedin' ? 'small' : 'medium'))
     if (block.type === 'custom-emoji') {
       setDialogInput1(block.emoji)
       setActiveDialog('emoji')
@@ -607,6 +613,18 @@ export default function BentoView() {
     } else if (block.type === 'instagram') {
       setDialogInput1(block.username)
       setActiveDialog('instagram')
+    } else if (block.type === 'github') {
+      setDialogInput1(block.username || '')
+      setActiveDialog('github')
+    } else if (block.type === 'youtube') {
+      setDialogInput1(block.username || '')
+      setActiveDialog('youtube')
+    } else if (block.type === 'twitter') {
+      setDialogInput1(block.username || '')
+      setActiveDialog('twitter')
+    } else if (block.type === 'linkedin') {
+      setDialogInput1(block.username || '')
+      setActiveDialog('linkedin')
     }
   }
 
@@ -678,6 +696,14 @@ export default function BentoView() {
             updatedBlock.items = filtered
           } else if (block.type === 'instagram') {
             updatedBlock.username = dialogInput1.trim()
+          } else if (block.type === 'github') {
+            updatedBlock.username = dialogInput1.trim()
+          } else if (block.type === 'youtube') {
+            updatedBlock.username = dialogInput1.trim()
+          } else if (block.type === 'twitter') {
+            updatedBlock.username = dialogInput1.trim()
+          } else if (block.type === 'linkedin') {
+            updatedBlock.username = dialogInput1.trim()
           }
           return updatedBlock
         }
@@ -703,6 +729,14 @@ export default function BentoView() {
       newBlock = { id: blockId, type: 'custom-checklist', title: listTitle.trim() || 'My List', items: filtered, w: 2, h: 1 };
     } else if (activeDialog === 'instagram') {
       newBlock = { id: blockId, type: 'instagram', username: dialogInput1.trim(), w: 2, h: 2 };
+    } else if (activeDialog === 'github') {
+      newBlock = { id: blockId, type: 'github', username: dialogInput1.trim(), w: 2, h: 2 };
+    } else if (activeDialog === 'youtube') {
+      newBlock = { id: blockId, type: 'youtube', username: dialogInput1.trim(), w: 2, h: 2 };
+    } else if (activeDialog === 'twitter') {
+      newBlock = { id: blockId, type: 'twitter', username: dialogInput1.trim(), w: 2, h: 2 };
+    } else if (activeDialog === 'linkedin') {
+      newBlock = { id: blockId, type: 'linkedin', username: dialogInput1.trim(), w: 2, h: 2 };
     }
 
     if (newBlock) {
@@ -909,32 +943,19 @@ export default function BentoView() {
             }
             if (block.type === 'github') {
               return (
-                <div
+                <GitHubCard
                   key={block.id}
-                  className={`bento-card-base bento-git-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
-                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
-                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
-                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
-                  style={blockStyle}
-                >
-                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                  <div className="bento-git-left-new">
-                    <div className="bento-git-icon-new">
-                      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-                        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
-                      </svg>
-                    </div>
-                    <div className="bento-git-details-new">
-                      <div className="bento-git-title-new">{block.username}</div>
-                      <div className="bento-git-sub-new">github.com</div>
-                    </div>
-                  </div>
-                  <div className="bento-git-divider-new" />
-                  <div className="bento-git-right-new" style={{ padding: 0, overflow: 'hidden' }}>
-                    <img src="/assets/images/github_preview.png" alt="GitHub contributions" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                  {renderResizeHandles(block)}
-                </div>
+                  block={block}
+                  isDraggingThis={isDraggingThis}
+                  isResizingThis={isResizingThis}
+                  blockStyle={blockStyle}
+                  handleDeleteBlock={handleDeleteBlock}
+                  handleEditBlock={handleEditBlock}
+                  renderResizeHandles={renderResizeHandles}
+                  handlePointerDownBlock={handlePointerDownBlock}
+                  handlePointerMoveBlock={handlePointerMoveBlock}
+                  handlePointerUpBlock={handlePointerUpBlock}
+                />
               )
             }
             if (block.type === 'image') {
@@ -996,43 +1017,19 @@ export default function BentoView() {
             }
             if (block.type === 'youtube') {
               return (
-                <div
+                <YouTubeCard
                   key={block.id}
-                  className={`bento-card-base bento-yt-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
-                  onPointerDown={(e) => handlePointerDownBlock(e, block)}
-                  onPointerMove={(e) => handlePointerMoveBlock(e, block.id)}
-                  onPointerUp={(e) => handlePointerUpBlock(e, block.id)}
-                  style={blockStyle}
-                >
-                  <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
-                  <div className="bento-yt-left-new">
-                    <div className="bento-yt-brand-new">
-                      <div className="bento-yt-icon-new">▶</div>
-                      <div className="bento-yt-text-new">
-                        <div className="bento-yt-title-new">{block.title}</div>
-                        <div className="bento-yt-sub-new">youtube.com</div>
-                      </div>
-                    </div>
-                    <button
-                      className={`btn-bento-sub-new ${subscribed ? 'subscribed' : ''}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSubscribed(!subscribed)
-                        toast(subscribed ? 'Unsubscribed on YouTube' : 'Subscribe 694')
-                      }}
-                    >
-                      {subscribed ? '✓ Subscribed' : 'Subscribe 694'}
-                    </button>
-                  </div>
-                  <div className="bento-yt-right-new">
-                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/fintech_dashboard.png) center/cover' }} />
-                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/ecommerce_app.png) center/cover' }} />
-                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/design_system.png) center/cover' }} />
-                    <div className="yt-grid-item-new" style={{ background: 'url(/assets/images/ar_glass.png) center/cover' }} />
-                  </div>
-                  {renderResizeHandles(block)}
-                </div>
+                  block={block}
+                  isDraggingThis={isDraggingThis}
+                  isResizingThis={isResizingThis}
+                  blockStyle={blockStyle}
+                  handleDeleteBlock={handleDeleteBlock}
+                  handleEditBlock={handleEditBlock}
+                  renderResizeHandles={renderResizeHandles}
+                  handlePointerDownBlock={handlePointerDownBlock}
+                  handlePointerMoveBlock={handlePointerMoveBlock}
+                  handlePointerUpBlock={handlePointerUpBlock}
+                />
               )
             }
             if (block.type === 'custom-emoji') {
@@ -1156,37 +1153,13 @@ export default function BentoView() {
                   handleDeleteBlock={handleDeleteBlock}
                   handleEditBlock={handleEditBlock}
                   renderResizeHandles={renderResizeHandles}
+                  handlePointerDownBlock={handlePointerDownBlock}
+                  handlePointerMoveBlock={handlePointerMoveBlock}
+                  handlePointerUpBlock={handlePointerUpBlock}
                 />
               )
             }
-            if (block.type === 'github') {
-              return (
-                <GitHubCard
-                  key={block.id}
-                  block={block}
-                  isDraggingThis={isDraggingThis}
-                  isResizingThis={isResizingThis}
-                  blockStyle={blockStyle}
-                  handleDeleteBlock={handleDeleteBlock}
-                  handleEditBlock={handleEditBlock}
-                  renderResizeHandles={renderResizeHandles}
-                />
-              )
-            }
-            if (block.type === 'youtube') {
-              return (
-                <YouTubeCard
-                  key={block.id}
-                  block={block}
-                  isDraggingThis={isDraggingThis}
-                  isResizingThis={isResizingThis}
-                  blockStyle={blockStyle}
-                  handleDeleteBlock={handleDeleteBlock}
-                  handleEditBlock={handleEditBlock}
-                  renderResizeHandles={renderResizeHandles}
-                />
-              )
-            }
+
             if (block.type === 'twitter') {
               return (
                 <TwitterCard
@@ -1198,6 +1171,9 @@ export default function BentoView() {
                   handleDeleteBlock={handleDeleteBlock}
                   handleEditBlock={handleEditBlock}
                   renderResizeHandles={renderResizeHandles}
+                  handlePointerDownBlock={handlePointerDownBlock}
+                  handlePointerMoveBlock={handlePointerMoveBlock}
+                  handlePointerUpBlock={handlePointerUpBlock}
                 />
               )
             }
@@ -1212,6 +1188,9 @@ export default function BentoView() {
                   handleDeleteBlock={handleDeleteBlock}
                   handleEditBlock={handleEditBlock}
                   renderResizeHandles={renderResizeHandles}
+                  handlePointerDownBlock={handlePointerDownBlock}
+                  handlePointerMoveBlock={handlePointerMoveBlock}
+                  handlePointerUpBlock={handlePointerUpBlock}
                 />
               )
             }
@@ -1281,6 +1260,10 @@ export default function BentoView() {
               {activeDialog === 'text' && (editingBlockId ? 'Edit Text Block' : 'Add Text Block')}
               {activeDialog === 'checklist' && (editingBlockId ? 'Edit List Block' : 'Add List Block')}
               {activeDialog === 'instagram' && (editingBlockId ? 'Edit Instagram Block' : 'Add Instagram Block')}
+              {activeDialog === 'github' && (editingBlockId ? 'Edit GitHub Block' : 'Add GitHub Block')}
+              {activeDialog === 'youtube' && (editingBlockId ? 'Edit YouTube Block' : 'Add YouTube Block')}
+              {activeDialog === 'twitter' && (editingBlockId ? 'Edit Twitter / X Block' : 'Add Twitter / X Block')}
+              {activeDialog === 'linkedin' && (editingBlockId ? 'Edit LinkedIn Block' : 'Add LinkedIn Block')}
             </h3>
 
             {activeDialog === 'select-tool' && (
@@ -1351,32 +1334,32 @@ export default function BentoView() {
                     <span className="tool-select-desc">Show live followers & posts</span>
                   </div>
                 </button>
-                <button className="tool-select-item" onClick={() => { handleAddSocialBlock('github'); closeDialog(); }} title="Add GitHub Block">
+                <button className="tool-select-item" onClick={() => openDialog('github')} title="Add GitHub Block">
                   <span className="tool-select-icon">💻</span>
                   <div className="tool-select-details">
                     <span className="tool-select-name">GitHub</span>
                     <span className="tool-select-desc">Show repos & stats</span>
                   </div>
                 </button>
-                <button className="tool-select-item" onClick={() => { handleAddSocialBlock('youtube'); closeDialog(); }} title="Add YouTube Block">
+                <button className="tool-select-item" onClick={() => openDialog('youtube')} title="Add YouTube Block">
                   <span className="tool-select-icon">🎥</span>
                   <div className="tool-select-details">
                     <span className="tool-select-name">YouTube</span>
                     <span className="tool-select-desc">Show stats & videos</span>
                   </div>
                 </button>
-                <button className="tool-select-item" onClick={() => { handleAddSocialBlock('twitter'); closeDialog(); }} title="Add Twitter Block">
+                 <button className="tool-select-item" onClick={() => openDialog('twitter')} title="Add Twitter Block">
                   <span className="tool-select-icon">🐦</span>
                   <div className="tool-select-details">
                     <span className="tool-select-name">Twitter / X</span>
                     <span className="tool-select-desc">Show tweets & stats</span>
                   </div>
                 </button>
-                <button className="tool-select-item" onClick={() => { handleAddSocialBlock('linkedin'); closeDialog(); }} title="Add LinkedIn Block">
+                <button className="tool-select-item" onClick={() => openDialog('linkedin')} title="Add LinkedIn Block">
                   <span className="tool-select-icon">👥</span>
                   <div className="tool-select-details">
                     <span className="tool-select-name">LinkedIn</span>
-                    <span className="tool-select-desc">Show profile link</span>
+                    <span className="tool-select-desc">Show profile & posts</span>
                   </div>
                 </button>
                 <button className="tool-select-item" onClick={() => { handleAddSocialBlock('dribbble'); closeDialog(); }} title="Add Dribbble Block">
@@ -1406,6 +1389,46 @@ export default function BentoView() {
                 id="bento-dialog-input-1"
                 className="bento-dialog-input"
                 placeholder="Instagram Username (e.g. nasa)"
+                value={dialogInput1}
+                onChange={e => setDialogInput1(e.target.value)}
+              />
+            )}
+            {activeDialog === 'github' && (
+              <input
+                type="text"
+                id="bento-dialog-input-1"
+                className="bento-dialog-input"
+                placeholder="GitHub Username (e.g. torvalds)"
+                value={dialogInput1}
+                onChange={e => setDialogInput1(e.target.value)}
+              />
+            )}
+            {activeDialog === 'youtube' && (
+              <input
+                type="text"
+                id="bento-dialog-input-1"
+                className="bento-dialog-input"
+                placeholder="YouTube Username, Handle, or Channel ID/URL"
+                value={dialogInput1}
+                onChange={e => setDialogInput1(e.target.value)}
+              />
+            )}
+            {activeDialog === 'twitter' && (
+              <input
+                type="text"
+                id="bento-dialog-input-1"
+                className="bento-dialog-input"
+                placeholder="Twitter/X Username, @handle, or Profile URL"
+                value={dialogInput1}
+                onChange={e => setDialogInput1(e.target.value)}
+              />
+            )}
+            {activeDialog === 'linkedin' && (
+              <input
+                type="text"
+                id="bento-dialog-input-1"
+                className="bento-dialog-input"
+                placeholder="LinkedIn Profile URL or Username (e.g. satyanadella)"
                 value={dialogInput1}
                 onChange={e => setDialogInput1(e.target.value)}
               />
@@ -1566,7 +1589,18 @@ export default function BentoView() {
   )
 }
 
-function InstagramCard({ block, isDraggingThis, isResizingThis, blockStyle, handleDeleteBlock, handleEditBlock, renderResizeHandles }) {
+function InstagramCard({
+  block,
+  isDraggingThis,
+  isResizingThis,
+  blockStyle,
+  handleDeleteBlock,
+  handleEditBlock,
+  renderResizeHandles,
+  handlePointerDownBlock,
+  handlePointerMoveBlock,
+  handlePointerUpBlock
+}) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -1606,6 +1640,9 @@ function InstagramCard({ block, isDraggingThis, isResizingThis, blockStyle, hand
     <div
       className={`bento-card-base bento-insta-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
       style={blockStyle}
+      onPointerDown={(e) => handlePointerDownBlock && handlePointerDownBlock(e, block)}
+      onPointerMove={(e) => handlePointerMoveBlock && handlePointerMoveBlock(e, block.id)}
+      onPointerUp={(e) => handlePointerUpBlock && handlePointerUpBlock(e, block.id)}
     >
       <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
       <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
@@ -1689,9 +1726,20 @@ function InstagramCard({ block, isDraggingThis, isResizingThis, blockStyle, hand
   );
 }
 
-function GitHubCard({ block, isDraggingThis, isResizingThis, blockStyle, handleDeleteBlock, handleEditBlock, renderResizeHandles }) {
+function GitHubCard({ 
+  block, 
+  isDraggingThis, 
+  isResizingThis, 
+  blockStyle, 
+  handleDeleteBlock, 
+  handleEditBlock, 
+  renderResizeHandles,
+  handlePointerDownBlock,
+  handlePointerMoveBlock,
+  handlePointerUpBlock
+}) {
   const { socialLinks } = useOnboarding();
-  const username = socialLinks?.github || '';
+  const username = block.username || socialLinks?.github || '';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1730,13 +1778,17 @@ function GitHubCard({ block, isDraggingThis, isResizingThis, blockStyle, handleD
     <div
       className={`bento-card-base bento-insta-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
       style={{ ...blockStyle, display: 'flex', flexDirection: 'column' }}
+      onPointerDown={(e) => handlePointerDownBlock && handlePointerDownBlock(e, block)}
+      onPointerMove={(e) => handlePointerMoveBlock && handlePointerMoveBlock(e, block.id)}
+      onPointerUp={(e) => handlePointerUpBlock && handlePointerUpBlock(e, block.id)}
     >
       <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+      <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
 
       {!username && (
         <div className="bento-insta-error" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
           <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>💻</span>
-          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your GitHub account from the Accounts page.</p>
+          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your GitHub account or click edit to set a username.</p>
         </div>
       )}
 
@@ -1782,7 +1834,7 @@ function GitHubCard({ block, isDraggingThis, isResizingThis, blockStyle, handleD
                 </p>
               )}
 
-              <div className="bento-insta-stats" style={{ margin: '8px 0 12px 0' }}>
+              <div className="bento-insta-stats" style={{ margin: '8px 0 10px 0' }}>
                 <div className="bento-insta-stat-item">
                   <span className="bento-insta-stat-value">{formatNumber(profile.followersCount)}</span>
                   <span className="bento-insta-stat-label">followers</span>
@@ -1797,22 +1849,37 @@ function GitHubCard({ block, isDraggingThis, isResizingThis, blockStyle, handleD
                 </div>
               </div>
 
-              {profile.recentRepos && profile.recentRepos.length > 0 && (
+              {profile.recentRepos && profile.recentRepos.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: 'auto' }}>
                   {profile.recentRepos.slice(0, 3).map((repo, idx) => (
-                    <a key={idx} href={repo.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', flexDirection: 'column', padding: '8px 10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', textDecoration: 'none', textAlign: 'left' }}>
+                    <a key={idx} href={repo.url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', flexDirection: 'column', padding: '6px 10px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0', textDecoration: 'none', textAlign: 'left' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '75%' }}>{repo.name}</span>
-                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>⭐ {formatNumber(repo.stars)}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#64748B', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                          <span>⭐ {formatNumber(repo.stars)}</span>
+                          {repo.forks !== undefined && <span>🍴 {formatNumber(repo.forks)}</span>}
+                        </span>
                       </div>
                       {repo.description && (
-                        <span style={{ fontSize: '0.75rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '2px' }}>{repo.description}</span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: '1px' }}>{repo.description}</span>
                       )}
-                      {repo.language && (
-                        <span style={{ fontSize: '0.7rem', color: '#3B82F6', fontWeight: '600', marginTop: '2px' }}>● {repo.language}</span>
-                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                        {repo.language && (
+                          <span style={{ fontSize: '0.7rem', color: '#3B82F6', fontWeight: '600' }}>● {repo.language}</span>
+                        )}
+                        {repo.updatedAt && (
+                          <span style={{ fontSize: '0.62rem', color: '#94A3B8' }}>
+                            Updated {new Date(repo.updatedAt).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </a>
                   ))}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: 1, padding: '16px', color: '#64748B' }}>
+                  <span style={{ fontSize: '1.2rem', marginBottom: '4px' }}>📁</span>
+                  <span style={{ fontSize: '0.8rem' }}>No public repositories found</span>
                 </div>
               )}
             </div>
@@ -1825,9 +1892,20 @@ function GitHubCard({ block, isDraggingThis, isResizingThis, blockStyle, handleD
   );
 }
 
-function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handleDeleteBlock, handleEditBlock, renderResizeHandles }) {
+function YouTubeCard({ 
+  block, 
+  isDraggingThis, 
+  isResizingThis, 
+  blockStyle, 
+  handleDeleteBlock, 
+  handleEditBlock, 
+  renderResizeHandles,
+  handlePointerDownBlock,
+  handlePointerMoveBlock,
+  handlePointerUpBlock
+}) {
   const { socialLinks } = useOnboarding();
-  const username = socialLinks?.youtube || '';
+  const username = block.username || socialLinks?.youtube || '';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1839,7 +1917,7 @@ function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
     }
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:3001/api/social/youtube/${username}`)
+    fetch(`http://localhost:3001/api/social/youtube/${encodeURIComponent(username)}`)
       .then(res => res.json().then(json => ({ ok: res.ok, json })))
       .then(({ ok, json }) => {
         if (!ok) throw new Error(json.error || 'YouTube channel not found');
@@ -1864,13 +1942,17 @@ function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
     <div
       className={`bento-card-base bento-insta-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
       style={{ ...blockStyle, display: 'flex', flexDirection: 'column' }}
+      onPointerDown={(e) => handlePointerDownBlock && handlePointerDownBlock(e, block)}
+      onPointerMove={(e) => handlePointerMoveBlock && handlePointerMoveBlock(e, block.id)}
+      onPointerUp={(e) => handlePointerUpBlock && handlePointerUpBlock(e, block.id)}
     >
       <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+      <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
 
       {!username && (
         <div className="bento-insta-error" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
           <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🎥</span>
-          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your YouTube account from the Accounts page.</p>
+          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your YouTube account or click edit to set a channel.</p>
         </div>
       )}
 
@@ -1886,26 +1968,27 @@ function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
         <div className="bento-insta-error">
           <div className="bento-insta-error-icon">🎥</div>
           <div className="bento-insta-error-text">@{username}</div>
-          <div className="bento-insta-error-sub">{error}</div>
+          <div className="bento-insta-error-sub">Failed to load YouTube data.</div>
         </div>
       )}
 
       {username && !loading && !error && data && data.success && data.profile && (
         (() => {
           const profile = data.profile;
+          const targetChannelUrl = profile.channelUrl || `https://youtube.com/${profile.handle}`;
           return (
             <div className="bento-insta-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
               <div className="bento-insta-header">
                 <div className="bento-insta-profile-info">
                   <img src={profile.profilePicture || '/assets/images/foxy_avatar.png'} alt={profile.channelName} className="bento-insta-avatar" referrerPolicy="no-referrer" />
                   <div className="bento-insta-names">
-                    <a href={profile.handle.startsWith('http') ? profile.handle : `https://youtube.com/${profile.handle}`} target="_blank" rel="noopener noreferrer" className="bento-insta-fullname">
+                    <a href={targetChannelUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-fullname">
                       {profile.channelName}
                     </a>
                     <span className="bento-insta-handle">{profile.handle}</span>
                   </div>
                 </div>
-                <a href={profile.handle.startsWith('http') ? profile.handle : `https://youtube.com/${profile.handle}`} target="_blank" rel="noopener noreferrer" className="bento-insta-follow-btn" style={{ background: '#FF0000', color: '#FFF' }}>
+                <a href={targetChannelUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-follow-btn" style={{ background: '#FF0000', color: '#FFF' }}>
                   Subscribe
                 </a>
               </div>
@@ -1916,7 +1999,7 @@ function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
                 </p>
               )}
 
-              <div className="bento-insta-stats" style={{ margin: '8px 0 12px 0' }}>
+              <div className="bento-insta-stats" style={{ margin: '8px 0 10px 0' }}>
                 <div className="bento-insta-stat-item">
                   <span className="bento-insta-stat-value">{formatNumber(profile.subscribersCount)}</span>
                   <span className="bento-insta-stat-label">subscribers</span>
@@ -1931,16 +2014,27 @@ function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
                 </div>
               </div>
 
-              {profile.recentVideos && profile.recentVideos.length > 0 && (
+              {profile.recentVideos && profile.recentVideos.length > 0 ? (
                 <div className="bento-insta-posts-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 'auto' }}>
                   {profile.recentVideos.slice(0, 3).map((video, idx) => (
                     <a key={idx} href={video.url} target="_blank" rel="noopener noreferrer" className="bento-insta-post-link" title={video.title}>
                       <img src={video.thumbnailUrl} alt={video.title} className="bento-insta-post-img" referrerPolicy="no-referrer" />
-                      <div className="bento-insta-post-hover" style={{ padding: '4px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>▶️ Play</span>
+                      <div className="bento-insta-post-hover" style={{ padding: '4px', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textAlign: 'center', color: '#fff', fontSize: '0.65rem', fontWeight: '500' }}>{video.title}</span>
+                        {video.viewCount !== undefined && (
+                          <span style={{ fontSize: '0.55rem', color: '#E2E8F0' }}>👁️ {formatNumber(video.viewCount)}</span>
+                        )}
+                        {video.uploadedAt && (
+                          <span style={{ fontSize: '0.5rem', color: '#CBD5E1' }}>{new Date(video.uploadedAt).toLocaleDateString()}</span>
+                        )}
                       </div>
                     </a>
                   ))}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: 1, padding: '16px', color: '#64748B' }}>
+                  <span style={{ fontSize: '1.2rem', marginBottom: '4px' }}>📁</span>
+                  <span style={{ fontSize: '0.8rem' }}>No public videos found</span>
                 </div>
               )}
             </div>
@@ -1953,9 +2047,20 @@ function YouTubeCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
   );
 }
 
-function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handleDeleteBlock, handleEditBlock, renderResizeHandles }) {
+function TwitterCard({
+  block,
+  isDraggingThis,
+  isResizingThis,
+  blockStyle,
+  handleDeleteBlock,
+  handleEditBlock,
+  renderResizeHandles,
+  handlePointerDownBlock,
+  handlePointerMoveBlock,
+  handlePointerUpBlock
+}) {
   const { socialLinks } = useOnboarding();
-  const username = socialLinks?.twitter || '';
+  const username = block.username || socialLinks?.twitter || '';
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -1967,13 +2072,11 @@ function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
     }
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:3001/api/social/twitter/${username}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Twitter profile error');
-        return res.json();
-      })
-      .then(data => {
-        setData(data);
+    fetch(`http://localhost:3001/api/social/twitter/${encodeURIComponent(username)}`)
+      .then(res => res.json().then(json => ({ ok: res.ok, json })))
+      .then(({ ok, json }) => {
+        if (!ok) throw new Error(json.error || 'Twitter/X profile not found');
+        setData(json);
         setLoading(false);
       })
       .catch(err => {
@@ -1994,13 +2097,17 @@ function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
     <div
       className={`bento-card-base bento-insta-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
       style={{ ...blockStyle, display: 'flex', flexDirection: 'column' }}
+      onPointerDown={(e) => handlePointerDownBlock && handlePointerDownBlock(e, block)}
+      onPointerMove={(e) => handlePointerMoveBlock && handlePointerMoveBlock(e, block.id)}
+      onPointerUp={(e) => handlePointerUpBlock && handlePointerUpBlock(e, block.id)}
     >
       <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+      <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
 
       {!username && (
         <div className="bento-insta-error" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
           <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🐦</span>
-          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your Twitter / X account from the Accounts page.</p>
+          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your Twitter / X account or click edit to set a username.</p>
         </div>
       )}
 
@@ -2009,6 +2116,14 @@ function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
           <div className="bento-insta-shimmer header" />
           <div className="bento-insta-shimmer stats" />
           <div className="bento-insta-shimmer grid" />
+        </div>
+      )}
+
+      {username && !loading && error && (
+        <div className="bento-insta-error">
+          <div className="bento-insta-error-icon">🐦</div>
+          <div className="bento-insta-error-text">@{username}</div>
+          <div className="bento-insta-error-sub">Failed to load Twitter/X data.</div>
         </div>
       )}
 
@@ -2066,7 +2181,7 @@ function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
                 </p>
               )}
 
-              <div className="bento-insta-stats" style={{ margin: '8px 0 12px 0', justifyContent: 'space-around' }}>
+              <div className="bento-insta-stats" style={{ margin: '8px 0 10px 0', justifyContent: 'space-around' }}>
                 <div className="bento-insta-stat-item">
                   <span className="bento-insta-stat-value">{formatNumber(profile.followersCount)}</span>
                   <span className="bento-insta-stat-label">followers</span>
@@ -2080,6 +2195,71 @@ function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
                   <span className="bento-insta-stat-label">posts</span>
                 </div>
               </div>
+
+              {profile.recentPosts && profile.recentPosts.length > 0 ? (
+                <div className="bento-insta-posts-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 'auto' }}>
+                  {profile.recentPosts.slice(0, 3).map((post, idx) => {
+                    const hasMedia = !!post.imageUrl;
+                    return (
+                      <a key={idx} href={post.postUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-post-link" title={post.text}>
+                        {hasMedia ? (
+                          <>
+                            <img src={post.imageUrl} alt="Tweet media" className="bento-insta-post-img" referrerPolicy="no-referrer" />
+                            <div className="bento-insta-post-hover" style={{ padding: '4px', fontSize: '0.62rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textAlign: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: '500', marginBottom: '2px' }}>
+                                {post.text}
+                              </span>
+                              <div style={{ display: 'flex', gap: '6px', fontSize: '0.55rem' }}>
+                                {post.likesCount !== undefined && <span>❤️ {formatNumber(post.likesCount)}</span>}
+                                {post.retweetsCount !== undefined && <span>🔁 {formatNumber(post.retweetsCount)}</span>}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            padding: '8px',
+                            background: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: '12px',
+                            boxSizing: 'border-box',
+                            textAlign: 'left'
+                          }}>
+                            <span style={{
+                              fontSize: '0.62rem',
+                              color: '#334155',
+                              fontWeight: '500',
+                              lineHeight: '1.3',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 4,
+                              WebkitBoxOrient: 'vertical'
+                            }}>
+                              {post.text}
+                            </span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                              <span style={{ fontSize: '0.5rem', color: '#1DA1F2' }}>🐦</span>
+                              <span style={{ fontSize: '0.5rem', color: '#94A3B8' }}>
+                                {post.likesCount !== undefined ? `❤️ ${formatNumber(post.likesCount)}` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: 1, padding: '16px', color: '#64748B' }}>
+                  <span style={{ fontSize: '1.2rem', marginBottom: '4px' }}>🐦</span>
+                  <span style={{ fontSize: '0.8rem' }}>No public tweets found</span>
+                </div>
+              )}
             </div>
           );
         })()
@@ -2090,51 +2270,212 @@ function TwitterCard({ block, isDraggingThis, isResizingThis, blockStyle, handle
   );
 }
 
-function LinkedInCard({ block, isDraggingThis, isResizingThis, blockStyle, handleDeleteBlock, handleEditBlock, renderResizeHandles }) {
+function LinkedInCard({
+  block,
+  isDraggingThis,
+  isResizingThis,
+  blockStyle,
+  handleDeleteBlock,
+  handleEditBlock,
+  renderResizeHandles,
+  handlePointerDownBlock,
+  handlePointerMoveBlock,
+  handlePointerUpBlock
+}) {
   const { socialLinks } = useOnboarding();
-  const username = socialLinks?.linkedin || '';
+  const username = block.username || socialLinks?.linkedin || '';
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!username) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    fetch(`http://localhost:3001/api/social/linkedin/${encodeURIComponent(username)}`)
+      .then(res => res.json().then(json => ({ ok: res.ok, json })))
+      .then(({ ok, json }) => {
+        if (!ok) throw new Error(json.error || 'LinkedIn profile not found');
+        setData(json);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [username]);
+
+  const formatNumber = (num) => {
+    if (!num) return '0';
+    if (num >= 1000000) return (num / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return num;
+  };
 
   const profileUrl = username.startsWith('http') ? username : `https://www.linkedin.com/in/${username}`;
-  const displayName = username.split('/').filter(Boolean).pop() || username;
 
   return (
     <div
       className={`bento-card-base bento-insta-card-new ${isDraggingThis ? 'dragging' : ''} ${isResizingThis ? 'resizing' : ''}`}
       style={{ ...blockStyle, display: 'flex', flexDirection: 'column' }}
+      onPointerDown={(e) => handlePointerDownBlock && handlePointerDownBlock(e, block)}
+      onPointerMove={(e) => handlePointerMoveBlock && handlePointerMoveBlock(e, block.id)}
+      onPointerUp={(e) => handlePointerUpBlock && handlePointerUpBlock(e, block.id)}
     >
       <button className="delete-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteBlock(block.id); }} title="Delete Block">🗑️</button>
+      <button className="edit-block-btn" onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEditBlock(block); }} title="Edit Block">✏️</button>
 
       {!username && (
         <div className="bento-insta-error" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px' }}>
           <span style={{ fontSize: '2.5rem', marginBottom: '8px' }}>👥</span>
-          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your LinkedIn account from the Accounts page.</p>
+          <p style={{ fontSize: '0.9rem', color: '#64748B', textAlign: 'center', fontWeight: 'bold' }}>Connect your LinkedIn account or click edit to set a profile URL/username.</p>
         </div>
       )}
 
-      {username && (
-        <div className="bento-insta-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <div className="bento-insta-header">
-            <div className="bento-insta-profile-info">
-              <div className="bento-insta-avatar" style={{ background: '#0077B5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '1.2rem' }}>
-                in
-              </div>
-              <div className="bento-insta-names">
-                <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-fullname">
-                  LinkedIn Profile
-                </a>
-                <span className="bento-insta-handle">@{displayName}</span>
-              </div>
-            </div>
-            <a href={profileUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-follow-btn" style={{ background: '#0077B5', color: '#FFF' }}>
-              Connect
-            </a>
-          </div>
-          <div style={{ marginTop: 'auto', marginBottom: 'auto', padding: '12px', background: '#F8FAFC', borderRadius: '10px', border: '1px solid #E2E8F0', textAlign: 'center' }}>
-            <p style={{ fontSize: '0.82rem', color: '#64748B', margin: 0, lineHeight: '1.4' }}>
-              View professional experience, education, connections, and posts on LinkedIn.
-            </p>
-          </div>
+      {username && loading && (
+        <div className="bento-insta-loading">
+          <div className="bento-insta-shimmer header" />
+          <div className="bento-insta-shimmer stats" />
+          <div className="bento-insta-shimmer grid" />
         </div>
+      )}
+
+      {username && !loading && error && (
+        <div className="bento-insta-error">
+          <div className="bento-insta-error-icon">👥</div>
+          <div className="bento-insta-error-text">{username.split('/').filter(Boolean).pop()}</div>
+          <div className="bento-insta-error-sub">Failed to load LinkedIn data.</div>
+        </div>
+      )}
+
+      {username && !loading && !error && data && (
+        (() => {
+          const profile = data.profile;
+          const titleCompany = [profile.currentTitle, profile.currentCompany].filter(Boolean).join(' at ');
+          
+          return (
+            <div className="bento-insta-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <div className="bento-insta-header">
+                <div className="bento-insta-profile-info">
+                  <img src={profile.profilePicture || '/assets/images/foxy_avatar.png'} alt={profile.fullName} className="bento-insta-avatar" referrerPolicy="no-referrer" />
+                  <div className="bento-insta-names">
+                    <a href={profile.profileUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-fullname">
+                      {profile.fullName}
+                    </a>
+                    {profile.headline ? (
+                      <span className="bento-insta-handle" style={{ fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={profile.headline}>
+                        {profile.headline}
+                      </span>
+                    ) : titleCompany ? (
+                      <span className="bento-insta-handle" style={{ fontSize: '0.75rem' }}>{titleCompany}</span>
+                    ) : (
+                      <span className="bento-insta-handle">LinkedIn Profile</span>
+                    )}
+                  </div>
+                </div>
+                <a href={profile.profileUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-follow-btn" style={{ background: '#0077B5', color: '#FFF' }}>
+                  Connect
+                </a>
+              </div>
+
+              {profile.bio && (
+                <p className="bento-insta-bio" style={{ fontSize: '0.82rem', color: '#64748B', margin: '8px 0 2px 0', textAlign: 'left', lineHeight: '1.4', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }} title={profile.bio}>
+                  {profile.bio}
+                </p>
+              )}
+
+              <div className="bento-insta-stats" style={{ margin: '8px 0 10px 0', justifyContent: 'space-around' }}>
+                {profile.followersCount !== undefined && (
+                  <div className="bento-insta-stat-item">
+                    <span className="bento-insta-stat-value">{formatNumber(profile.followersCount)}</span>
+                    <span className="bento-insta-stat-label">followers</span>
+                  </div>
+                )}
+                {profile.connectionsCount !== undefined && (
+                  <div className="bento-insta-stat-item">
+                    <span className="bento-insta-stat-value">{formatNumber(profile.connectionsCount)}</span>
+                    <span className="bento-insta-stat-label">connections</span>
+                  </div>
+                )}
+                {profile.location && (
+                  <div className="bento-insta-stat-item" style={{ maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={profile.location}>
+                    <span className="bento-insta-stat-value" style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#64748B' }}>📍</span>
+                    <span className="bento-insta-stat-label" style={{ fontSize: '0.7rem' }}>{profile.location.split(',')[0]}</span>
+                  </div>
+                )}
+              </div>
+
+              {profile.recentPosts && profile.recentPosts.length > 0 ? (
+                <div className="bento-insta-posts-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)', marginTop: 'auto' }}>
+                  {profile.recentPosts.slice(0, 3).map((post, idx) => {
+                    const hasMedia = !!post.imageUrl;
+                    return (
+                      <a key={idx} href={post.postUrl} target="_blank" rel="noopener noreferrer" className="bento-insta-post-link" title={post.text}>
+                        {hasMedia ? (
+                          <>
+                            <img src={post.imageUrl} alt="LinkedIn media" className="bento-insta-post-img" referrerPolicy="no-referrer" />
+                            <div className="bento-insta-post-hover" style={{ padding: '4px', fontSize: '0.62rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '2px' }}>
+                              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textAlign: 'center', color: '#fff', fontSize: '0.6rem', fontWeight: '500', marginBottom: '2px' }}>
+                                {post.text}
+                              </span>
+                              <div style={{ display: 'flex', gap: '6px', fontSize: '0.55rem' }}>
+                                {post.likesCount !== undefined && <span>👍 {formatNumber(post.likesCount)}</span>}
+                                {post.commentsCount !== undefined && <span>💬 {formatNumber(post.commentsCount)}</span>}
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            padding: '8px',
+                            background: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: '12px',
+                            boxSizing: 'border-box',
+                            textAlign: 'left'
+                          }}>
+                            <span style={{
+                              fontSize: '0.62rem',
+                              color: '#334155',
+                              fontWeight: '500',
+                              lineHeight: '1.3',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 4,
+                              WebkitBoxOrient: 'vertical'
+                            }}>
+                              {post.text}
+                            </span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                              <span style={{ fontSize: '0.5rem', color: '#0077B5', fontWeight: 'bold' }}>in</span>
+                              <span style={{ fontSize: '0.5rem', color: '#94A3B8' }}>
+                                {post.likesCount !== undefined ? `👍 ${formatNumber(post.likesCount)}` : ''}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </a>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flex: 1, padding: '16px', color: '#64748B' }}>
+                  <span style={{ fontSize: '1.2rem', marginBottom: '4px' }}>💼</span>
+                  <span style={{ fontSize: '0.8rem' }}>No public posts found</span>
+                </div>
+              )}
+            </div>
+          );
+        })()
       )}
 
       {renderResizeHandles(block)}

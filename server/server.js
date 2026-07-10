@@ -1,12 +1,12 @@
+// Load environment variables FIRST, before any other imports
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const { connectDB } = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const instagramRoutes = require('./routes/instagramRoutes');
 const socialRoutes = require('./routes/socialRoutes');
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,4 +32,7 @@ connectDB().then(() => {
     app.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
     });
+}).catch((error) => {
+    console.error('\n[Startup] MongoDB connection failed. Express server was NOT started.');
+    console.error('[Startup] Resolve the database connection issue and save a file to trigger nodemon restart.\n');
 });

@@ -3,7 +3,7 @@ const router = express.Router();
 const { getGitHubProfile } = require('../services/githubService');
 const { getYouTubeProfile } = require('../services/youtubeService');
 const { getTwitterProfile } = require('../services/twitterService');
-const { getLinkedInProfile } = require('../services/linkedinService');
+const { getLinkedInProfile, normalizeLinkedInUsername } = require('../services/linkedinService');
 const { getDribbbleProfile } = require('../services/dribbbleService');
 
 // Caching storage map: key -> { data, expiresAt }
@@ -158,19 +158,32 @@ router.get('/twitter/:username', async (req, res) => {
     const cacheKey = `twitter:${username}`;
     const dedupeKey = `twitter:${username}`;
     
-    // Twitter is special: the service may return { success: false, errorType: 'UNAVAILABLE' }
-    // which must be passed through as-is, not wrapped by handleCachedRequest's { success: true, ...data }
+    // 1. Check cache
     const now = Date.now();
     if (cache.has(cacheKey)) {
         const cached = cache.get(cacheKey);
         if (now < cached.expiresAt) {
+            console.log(`[Cache] HIT for key: "${cacheKey}"`);
             return res.json(cached.data);
         } else {
+            console.log(`[Cache] EXPIRED for key: "${cacheKey}". Cleaning up...`);
             cache.delete(cacheKey);
         }
     }
     
-    try {
+    // 2. Check pending requests
+    if (pendingRequests.has(dedupeKey)) {
+        console.log(`[Deduplication] Active promise found for key: "${dedupeKey}". Awaiting...`);
+        try {
+            const data = await pendingRequests.get(dedupeKey);
+            return res.json(data);
+        } catch (error) {
+            return res.status(500).json({ success: false, error: error.message });
+        }
+    }
+    
+    // 3. Create the promise
+    const promise = (async () => {
         const profile = await getTwitterProfile(username);
         const host = req.headers.host;
         const baseProxyUrl = `${req.protocol}://${host}/api/social/proxy?url=`;
@@ -180,9 +193,18 @@ router.get('/twitter/:username', async (req, res) => {
             profile.profilePicture = `${baseProxyUrl}${encodeURIComponent(profile.profilePicture)}`;
         }
         
+        // Proxy recent tweets media previews if available
+        if (profile.recentPosts) {
+            profile.recentPosts = profile.recentPosts.map(post => {
+                if (post.imageUrl) {
+                    post.imageUrl = `${baseProxyUrl}${encodeURIComponent(post.imageUrl)}`;
+                }
+                return post;
+            });
+        }
+        
         let responseData;
         if (profile.success === false) {
-            // API unavailable — pass through directly so frontend sees { success: false, errorType, ... }
             responseData = profile;
         } else {
             responseData = { success: true, profile };
@@ -190,26 +212,54 @@ router.get('/twitter/:username', async (req, res) => {
         
         // Cache for 30 minutes
         cache.set(cacheKey, { data: responseData, expiresAt: Date.now() + 30 * 60 * 1000 });
+        return responseData;
+    })();
+    
+    pendingRequests.set(dedupeKey, promise);
+    
+    try {
+        const responseData = await promise;
         return res.json(responseData);
     } catch (error) {
         console.error(`[Social Route Error] twitter/${username}:`, error);
         return res.status(500).json({ success: false, error: error.message });
+    } finally {
+        pendingRequests.delete(dedupeKey);
     }
 });
 
 // LinkedIn profile endpoint
 router.get('/linkedin/:username', async (req, res) => {
-    const username = (req.params.username || '').trim();
+    const usernameParam = decodeURIComponent(req.params.username || '').trim();
+    const username = normalizeLinkedInUsername(usernameParam);
     if (!username) {
-        return res.status(400).json({ success: false, error: 'Username is required' });
+        return res.status(400).json({ success: false, error: 'LinkedIn profile identifier/URL is required' });
     }
     
     const cacheKey = `linkedin:${username.toLowerCase()}`;
     const dedupeKey = `linkedin:${username}`;
     
     await handleCachedRequest(cacheKey, dedupeKey, async () => {
-        const profile = await getLinkedInProfile(username);
-        return { profile };
+        const result = await getLinkedInProfile(username);
+        const host = req.headers.host;
+        const baseProxyUrl = `${req.protocol}://${host}/api/social/proxy?url=`;
+        
+        // Proxy profile pic if available
+        if (result.profile && result.profile.profilePicture) {
+            result.profile.profilePicture = `${baseProxyUrl}${encodeURIComponent(result.profile.profilePicture)}`;
+        }
+        
+        // Proxy recent posts media previews if available
+        if (result.profile && result.profile.recentPosts) {
+            result.profile.recentPosts = result.profile.recentPosts.map(post => {
+                if (post.imageUrl) {
+                    post.imageUrl = `${baseProxyUrl}${encodeURIComponent(post.imageUrl)}`;
+                }
+                return post;
+            });
+        }
+        
+        return result;
     }, res);
 });
 
