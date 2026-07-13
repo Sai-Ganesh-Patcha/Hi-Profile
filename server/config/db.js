@@ -1,6 +1,6 @@
 const { MongoClient } = require('mongodb');
 
-const dbName = 'shopmate';
+const dbName = 'hiprofile';
 
 let db;
 
@@ -64,4 +64,29 @@ const getDB = () => {
   return db;
 };
 
-module.exports = { connectDB, getDB };
+const setupIndexes = async () => {
+  try {
+    const database = getDB();
+    
+    // Users collection indexes
+    await database.collection('users').createIndex({ username: 1 }, { unique: true });
+    await database.collection('users').createIndex({ email: 1 }, { unique: true });
+    
+    // Username reservations collection unique index and TTL index (15 minutes)
+    await database.collection('username_reservations').createIndex({ username: 1 }, { unique: true });
+    // expiresAt is a Date field, expireAfterSeconds: 0 means it expires at expiresAt time
+    await database.collection('username_reservations').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    
+    // Refresh tokens TTL index (30 days)
+    await database.collection('refresh_tokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    
+    // Verification tokens TTL index (24 hours or 1 hour depending on document)
+    await database.collection('verification_tokens').createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+    
+    console.log('[MongoDB] All unique and TTL indexes verified/created successfully.');
+  } catch (error) {
+    console.error('[MongoDB] Index creation failed:', error);
+  }
+};
+
+module.exports = { connectDB, getDB, setupIndexes };

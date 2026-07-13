@@ -5,16 +5,65 @@ import Toast, { useToast } from '../components/Toast'
 
 export default function Claim() {
   const [username, setUsername] = useState('')
+  const [checking, setChecking] = useState(false)
   const { setClaimedUsername } = useOnboarding()
   const navigate = useNavigate()
   const [toastMsg, toastShow, toast] = useToast()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     const val = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
-    if (!val) { toast('Please enter a username'); return }
-    setClaimedUsername(val)
-    navigate(`/register?username=${val}`)
+    if (!val) { 
+      toast('Please enter a username')
+      return 
+    }
+    if (val.length < 3) {
+      toast('Username must be at least 3 characters')
+      return
+    }
+
+    setChecking(true)
+    try {
+      // 1. Check availability
+      const checkRes = await fetch(`http://localhost:3001/api/auth/username-check?username=${val}`)
+      const checkData = await checkRes.json()
+
+      if (!checkRes.ok || !checkData.success) {
+        toast(checkData.error || 'Failed to check username availability')
+        return
+      }
+
+      if (!checkData.available) {
+        toast(checkData.reason || 'Username is already taken')
+        return
+      }
+
+      // 2. Reserve username
+      const reserveRes = await fetch(`http://localhost:3001/api/auth/username-reserve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: val })
+      })
+      const reserveData = await reserveRes.json()
+
+      if (!reserveRes.ok || !reserveData.success) {
+        toast(reserveData.error || 'Failed to reserve username')
+        return
+      }
+
+      // 3. On success, store and navigate
+      setClaimedUsername(val)
+      toast('Username claimed successfully! 🎉')
+      setTimeout(() => {
+        navigate(`/register?username=${val}`)
+      }, 1000)
+
+    } catch (err) {
+      console.error(err)
+      toast('Network error checking availability. Please try again.')
+    } finally {
+      setChecking(false)
+    }
   }
 
   return (
@@ -36,12 +85,13 @@ export default function Claim() {
               placeholder="yourname"
               value={username}
               onChange={e => setUsername(e.target.value)}
+              disabled={checking}
               style={{ flex: 1, border: 'none', outline: 'none', fontFamily: 'var(--font-body)', fontSize: '1rem', background: 'transparent', color: '#111' }}
               aria-label="Username"
             />
           </div>
-          <button type="submit" className="btn-claim" style={{ width: '100%', height: '52px', background: '#3B82F6', color: '#fff', border: 'none', borderRadius: '12px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '1.05rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-            <span>Claim your profile</span><span>→</span>
+          <button type="submit" className="btn-claim" disabled={checking} style={{ width: '100%', height: '52px', background: '#3B82F6', color: '#fff', border: 'none', borderRadius: '12px', fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: '1.05rem', cursor: checking ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: checking ? 0.7 : 1 }}>
+            <span>{checking ? 'Checking availability...' : 'Claim your profile'}</span>{!checking && <span>→</span>}
           </button>
         </form>
         <p style={{ color: '#999', fontSize: '0.85rem', marginTop: '16px' }}>Free forever · No credit card required</p>

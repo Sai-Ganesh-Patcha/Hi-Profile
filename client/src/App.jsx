@@ -11,6 +11,11 @@ import Select   from './pages/Select'
 import TimelineView from './pages/TimelineView'
 import TimelineLive from './pages/TimelineLive'
 import BentoView from './pages/BentoView'
+import Dashboard from './pages/Dashboard'
+import VerifyPending from './pages/VerifyPending'
+import VerifyEmail from './pages/VerifyEmail'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 export default function App() {
   return (
@@ -21,6 +26,10 @@ export default function App() {
           <Route path="/claim"    element={<Claim />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login"    element={<Login />} />
+          <Route path="/verify-pending" element={<VerifyPending />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/upload"   element={<Upload />} />
           <Route path="/profile"  element={<Profile />} />
           <Route path="/setup"    element={<Setup />} />
@@ -28,6 +37,7 @@ export default function App() {
           <Route path="/timeline" element={<TimelineView />} />
           <Route path="/timeline-live" element={<TimelineLive />} />
           <Route path="/bento"    element={<BentoView />} />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
       </OnboardingProvider>
     </BrowserRouter>

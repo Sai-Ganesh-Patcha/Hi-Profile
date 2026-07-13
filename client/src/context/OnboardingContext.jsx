@@ -1,6 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useState, useEffect, useRef } from 'react'
 
 const OnboardingContext = createContext(null)
+
+const API_BASE = 'http://localhost:3001/api';
 
 const load = (key, fallback) => {
   try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback }
@@ -8,6 +10,13 @@ const load = (key, fallback) => {
 }
 
 export function OnboardingProvider({ children }) {
+  // Authentication States
+  const [user, setUser] = useState(null)
+  const [accessToken, setAccessToken] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const hasRecovered = useRef(false)
+
+  // Onboarding States
   const [claimedUsername, setClaimedUsername] = useState(() => load('claimedUsername', ''))
   const [avatar, setAvatar] = useState(() => load('hiprofile_avatar', { type: null, data: null, transform: '', bg: '' }))
   const [profileName, setProfileName] = useState(() => load('profileName', ''))
@@ -35,6 +44,107 @@ export function OnboardingProvider({ children }) {
   const [fontSize, setFontSize] = useState(() => load('hiprofile_fontSize', 'medium'))
   const [profileCardFont, setProfileCardFont] = useState(() => load('hiprofile_profileCardFont', 'Inter'))
 
+  // Silent session recovery on app mount
+  useEffect(() => {
+    if (hasRecovered.current) return
+    hasRecovered.current = true
+
+    const recoverSession = async () => {
+      try {
+        const refreshResponse = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        })
+       
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json()
+          const token = refreshData.accessToken
+          setAccessToken(token)
+
+          const userResponse = await fetch(`${API_BASE}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+         
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
+            setUser(userData.user)
+            localStorage.setItem('hiprofile_user', JSON.stringify(userData.user))
+          }
+        } else {
+          setUser(null)
+          localStorage.removeItem('hiprofile_user')
+        }
+      } catch (err) {
+        console.error('Session recovery failed:', err)
+      } finally {
+        setAuthLoading(false)
+      }
+    }
+    recoverSession()
+  }, [])
+
+  const loginUser = (token, userData) => {
+    setAccessToken(token)
+    setUser(userData)
+    localStorage.setItem('hiprofile_user', JSON.stringify(userData))
+  }
+
+  const logoutUser = async () => {
+    try {
+      await fetch(`${API_BASE}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+    } catch (e) {
+      console.error('Logout request failed:', e)
+    }
+    setAccessToken(null)
+    setUser(null)
+    localStorage.removeItem('hiprofile_user')
+  }
+
+  // JWT-Authorized API client with Auto-Refresh Interceptor (401 handler)
+  const fetchWithAuth = async (url, options = {}) => {
+    let headers = options.headers || {}
+    if (!(headers instanceof Headers)) {
+      headers = new Headers(headers)
+    }
+
+    if (accessToken) {
+      headers.set('Authorization', `Bearer ${accessToken}`)
+    }
+
+    let response = await fetch(url, { ...options, headers })
+
+    if (response.status === 401) {
+      console.log('[fetchWithAuth] Access token expired. Restoring...')
+      try {
+        const refreshRes = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include'
+        })
+
+        if (refreshRes.ok) {
+          const refreshData = await refreshRes.json()
+          const newToken = refreshData.accessToken
+          setAccessToken(newToken)
+
+          headers.set('Authorization', `Bearer ${newToken}`)
+          response = await fetch(url, { ...options, headers })
+        } else {
+          setAccessToken(null)
+          setUser(null)
+          localStorage.removeItem('hiprofile_user')
+        }
+      } catch (err) {
+        console.error('[fetchWithAuth] Automatic refresh process error:', err)
+      }
+    }
+
+    return response
+  }
+
+  // Onboarding Effects
   useEffect(() => { localStorage.setItem('claimedUsername', JSON.stringify(claimedUsername)) }, [claimedUsername])
   useEffect(() => { localStorage.setItem('hiprofile_avatar', JSON.stringify(avatar)) }, [avatar])
   useEffect(() => { localStorage.setItem('profileName', JSON.stringify(profileName)) }, [profileName])
@@ -64,6 +174,12 @@ export function OnboardingProvider({ children }) {
 
   return (
     <OnboardingContext.Provider value={{
+      user,
+      accessToken,
+      authLoading,
+      loginUser,
+      logoutUser,
+      fetchWithAuth,
       claimedUsername, setClaimedUsername,
       avatar, setAvatar,
       profileName, setProfileName,
@@ -89,4 +205,3 @@ export function useOnboarding() {
   if (!ctx) throw new Error('useOnboarding must be used inside OnboardingProvider')
   return ctx
 }
-

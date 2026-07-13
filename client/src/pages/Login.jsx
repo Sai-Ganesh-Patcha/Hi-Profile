@@ -1,27 +1,72 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useOnboarding } from '../context/OnboardingContext'
 import Toast, { useToast } from '../components/Toast'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
+  const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { loginUser } = useOnboarding()
   const [toastMsg, toastShow, toast] = useToast()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (!email || !password) {
       toast('Please fill in all fields')
       return
     }
-    toast('Login successful! 🎉')
-    setTimeout(() => navigate('/upload'), 1200)
+
+    setLoading(true)
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        if (response.status === 423) {
+          // Account locked out
+          toast(data.error || 'Account locked temporarily. Please try again later.')
+        } else if (response.status === 403 && data.requiresVerification) {
+          // Unverified email
+          toast('Email verification pending. Redirecting...')
+          setTimeout(() => {
+            navigate(`/verify-pending?email=${encodeURIComponent(email)}`)
+          }, 1200)
+        } else {
+          toast(data.error || 'Invalid email or password')
+        }
+        return
+      }
+
+      // Login success
+      loginUser(data.accessToken, data.user)
+      toast('Login successful! 🎉')
+      
+      setTimeout(() => {
+        if (data.user.profileCompletionStatus === 'completed') {
+          navigate('/timeline')
+        } else {
+          navigate('/upload')
+        }
+      }, 1200)
+
+    } catch (err) {
+      console.error(err)
+      toast('Network error login failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleGoogle = () => {
-    toast('Logging in with Google...')
-    setTimeout(() => navigate('/upload'), 1200)
+    window.location.href = 'http://localhost:3001/api/v1/auth/google'
   }
 
   return (
@@ -54,6 +99,7 @@ export default function Login() {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
+                disabled={loading}
                 style={{
                   width: '100%',
                   height: 50,
@@ -71,7 +117,7 @@ export default function Login() {
             </div>
 
             {/* Password Field */}
-            <div style={{ position: 'relative', width: '100%', marginBottom: 20 }}>
+            <div style={{ position: 'relative', width: '100%', marginBottom: 14 }}>
               <div style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', color: '#8E8E93' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -84,6 +130,7 @@ export default function Login() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 required
+                disabled={loading}
                 style={{
                   width: '100%',
                   height: 50,
@@ -129,9 +176,20 @@ export default function Login() {
               </button>
             </div>
 
+            {/* Forgot password link */}
+            <div style={{ textAlign: 'right', marginBottom: 20 }}>
+              <span 
+                onClick={() => navigate('/forgot-password')} 
+                style={{ fontSize: '0.85rem', color: '#3E66FB', fontWeight: 600, cursor: 'pointer' }}
+              >
+                Forgot Password?
+              </span>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
+              disabled={loading}
               style={{
                 width: '100%',
                 height: 50,
@@ -142,12 +200,13 @@ export default function Login() {
                 fontFamily: 'var(--font-body)',
                 fontWeight: 700,
                 fontSize: '1rem',
-                cursor: 'pointer',
+                cursor: loading ? 'not-allowed' : 'pointer',
                 marginBottom: 20,
+                opacity: loading ? 0.7 : 1,
                 transition: 'background 0.2s'
               }}
             >
-              Log In
+              {loading ? 'Logging In...' : 'Log In'}
             </button>
           </form>
 
@@ -161,6 +220,7 @@ export default function Login() {
           {/* Google Button */}
           <button
             onClick={handleGoogle}
+            disabled={loading}
             style={{
               width: '100%',
               height: 50,
@@ -175,7 +235,8 @@ export default function Login() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 12
+              gap: 12,
+              marginBottom: 16
             }}
           >
             <svg width="20" height="20" viewBox="0 0 48 48">
@@ -186,6 +247,10 @@ export default function Login() {
             </svg>
             Google
           </button>
+          
+          <p style={{ fontSize: '0.9rem', color: '#666', textAlign: 'center', marginTop: 12 }}>
+            Don't have an account? <span onClick={() => navigate('/claim')} style={{ color: '#3E66FB', fontWeight: 600, cursor: 'pointer' }}>Register</span>
+          </p>
         </div>
 
       </div>
