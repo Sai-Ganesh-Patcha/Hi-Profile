@@ -4,6 +4,20 @@ import { useOnboarding } from '../context/OnboardingContext'
 import Toast, { useToast } from '../components/Toast'
 import { getSocialIcon, getSocialBrandColor } from '../components/SocialIcons'
 
+function convertGoogleDriveUrl(url) {
+  if (!url || typeof url !== 'string') return url;
+  const trimmed = url.trim();
+  const fileMatch = trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch && fileMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
+  }
+  const idMatch = trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idMatch && idMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${idMatch[1]}`;
+  }
+  return trimmed;
+}
+
 // Collides two blocks
 const collides = (b1, b2) => {
   if (b1.id === b2.id) return false;
@@ -584,7 +598,7 @@ export default function BentoView() {
     setDialogInput2('')
     setListTitle('My List')
     setListItems(['', '', ''])
-    setDialogSize(type === 'emoji' || type === 'link' || type === 'instagram' || type === 'github' || type === 'youtube' || type === 'twitter' ? 'small' : 'medium')
+    setDialogSize(type === 'emoji' || type === 'link' || type === 'instagram' || type === 'github' || type === 'youtube' || type === 'twitter' || type === 'gdrive' ? 'small' : 'medium')
     setActiveDialog(type)
   }
 
@@ -595,7 +609,7 @@ export default function BentoView() {
 
   const handleEditBlock = (block) => {
     setEditingBlockId(block.id)
-    setDialogSize(block.size || (block.type === 'custom-emoji' || block.type === 'custom-link' || block.type === 'instagram' || block.type === 'github' || block.type === 'youtube' || block.type === 'twitter' || block.type === 'linkedin' ? 'small' : 'medium'))
+    setDialogSize(block.size || (block.type === 'custom-emoji' || block.type === 'custom-link' || block.type === 'instagram' || block.type === 'github' || block.type === 'youtube' || block.type === 'twitter' || block.type === 'linkedin' || block.type === 'image' ? 'small' : 'medium'))
     if (block.type === 'custom-emoji') {
       setDialogInput1(block.emoji)
       setActiveDialog('emoji')
@@ -610,6 +624,9 @@ export default function BentoView() {
       setListTitle(block.title || 'My List')
       setListItems(block.items || ['', '', ''])
       setActiveDialog('checklist')
+    } else if (block.type === 'image') {
+      setDialogInput1(block.url || '')
+      setActiveDialog('gdrive')
     } else if (block.type === 'instagram') {
       setDialogInput1(block.username)
       setActiveDialog('instagram')
@@ -694,6 +711,8 @@ export default function BentoView() {
             const filtered = listItems.map(i => i.trim()).filter(Boolean)
             updatedBlock.title = listTitle.trim() || 'My List'
             updatedBlock.items = filtered
+          } else if (block.type === 'image') {
+            updatedBlock.url = convertGoogleDriveUrl(dialogInput1.trim())
           } else if (block.type === 'instagram') {
             updatedBlock.username = dialogInput1.trim()
           } else if (block.type === 'github') {
@@ -727,6 +746,9 @@ export default function BentoView() {
     } else if (activeDialog === 'checklist') {
       const filtered = listItems.map(i => i.trim()).filter(Boolean);
       newBlock = { id: blockId, type: 'custom-checklist', title: listTitle.trim() || 'My List', items: filtered, w: 2, h: 1 };
+    } else if (activeDialog === 'gdrive' || activeDialog === 'image') {
+      const convertedUrl = convertGoogleDriveUrl(dialogInput1.trim());
+      newBlock = { id: blockId, type: 'image', url: convertedUrl, w: 1, h: 1 };
     } else if (activeDialog === 'instagram') {
       newBlock = { id: blockId, type: 'instagram', username: dialogInput1.trim(), w: 2, h: 2 };
     } else if (activeDialog === 'github') {
@@ -1296,11 +1318,18 @@ export default function BentoView() {
                     <span className="tool-select-desc">Create task checkbox list</span>
                   </div>
                 </button>
-                <button className="tool-select-item" onClick={() => { imageInputRef.current?.click(); closeDialog(); }} title="Add Image Card">
+                <button className="tool-select-item" onClick={() => openDialog('gdrive')} title="Add Google Drive Photo">
+                  <span className="tool-select-icon">📁</span>
+                  <div className="tool-select-details">
+                    <span className="tool-select-name">Google Drive Photo</span>
+                    <span className="tool-select-desc">Embed photo from Google Drive link</span>
+                  </div>
+                </button>
+                <button className="tool-select-item" onClick={() => { imageInputRef.current?.click(); closeDialog(); }} title="Add Local Image Card">
                   <span className="tool-select-icon">🖼️</span>
                   <div className="tool-select-details">
-                    <span className="tool-select-name">Image Card</span>
-                    <span className="tool-select-desc">Upload custom image file</span>
+                    <span className="tool-select-name">Local Image Card</span>
+                    <span className="tool-select-desc">Upload photo file from device</span>
                   </div>
                 </button>
                 <button className="tool-select-item" onClick={() => { handleToggleGridSpacing(); closeDialog(); }} title="Toggle Spacing">
@@ -1372,6 +1401,32 @@ export default function BentoView() {
               </div>
             )}
 
+            {activeDialog === 'gdrive' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <input
+                  type="text"
+                  id="bento-dialog-input-1"
+                  className="bento-dialog-input"
+                  placeholder="Paste Google Drive photo link or image URL..."
+                  value={dialogInput1}
+                  onChange={e => setDialogInput1(e.target.value)}
+                />
+                <p style={{ fontSize: '0.78rem', color: '#888', margin: '2px 0 0 0', lineHeight: '1.4' }}>
+                  💡 Tip: Set link sharing to "Anyone with the link can view". We automatically convert your Google Drive link into a direct photo!
+                </p>
+                {dialogInput1.trim() && (
+                  <div style={{ marginTop: '6px', textAlign: 'center', background: '#f5f5f5', borderRadius: '8px', padding: '8px' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#666', marginBottom: '6px', fontWeight: 600 }}>Preview:</p>
+                    <img
+                      src={convertGoogleDriveUrl(dialogInput1)}
+                      alt="Drive Preview"
+                      style={{ maxHeight: '120px', maxWidth: '100%', objectFit: 'contain', borderRadius: '6px' }}
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             {activeDialog === 'emoji' && (
               <input
                 type="text"

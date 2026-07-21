@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import Toast, { useToast } from '../components/Toast'
-import { useOnboarding } from '../context/OnboardingContext'
 import { getSocialIcon } from '../components/SocialIcons'
 
 const renderLinkButtonContent = (label) => {
@@ -31,20 +30,9 @@ const renderLinkButtonContent = (label) => {
 }
 
 export default function Home() {
-  const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
-  const { setClaimedUsername } = useOnboarding()
   const [toastMsg, toastShow, toast] = useToast()
   const navigate = useNavigate()
-
-  const handleClaim = (e) => {
-    e.preventDefault()
-    const val = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
-    if (val) {
-      setClaimedUsername(val)
-    }
-    navigate('/claim')
-  }
 
   const handleCTA = (e) => {
     e.preventDefault()
@@ -69,19 +57,11 @@ export default function Home() {
               <span className="gradient-text heading-line">Your Personal Webpage.</span>
             </h1>
             <p className="hero-subtitle">Create a beautiful personal page in minutes. Share who you are, what you do, and everything you love — all in one place.</p>
-            <form className="claim-form" onSubmit={handleClaim}>
-              <div className="input-wrapper">
-                <span className="input-prefix">hiprofile.bio/</span>
-                <input
-                  type="text"
-                  placeholder="yourname"
-                  aria-label="Username"
-                  value={username}
-                  onChange={e => setUsername(e.target.value)}
-                />
-              </div>
-              <button type="submit" className="btn-claim" id="btn-claim-landing"><span>Claim your profile</span><span className="arrow">→</span></button>
-            </form>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+              <button onClick={() => navigate('/claim')} className="btn-claim" id="btn-claim-landing" style={{ fontSize: '1.1rem', padding: '16px 36px', borderRadius: '10px' }}>
+                <span>Claim your profile</span><span className="arrow">→</span>
+              </button>
+            </div>
             <p className="claim-meta">No credit card required · Free forever · Setup in 2 minutes</p>
             <div className="social-proof">
               <div className="avatar-group">
